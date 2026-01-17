@@ -7,35 +7,37 @@ import { Eye, EyeOff, Download, Users, UserCheck, UserX, Calendar, Mail, Phone, 
 
 interface RSVPSubmission {
   id: string;
-  name: string;
-  nickname: string;
+  name: string | null;
+  nickname: string | null;
   email: string;
-  phone: string;
-  guests: number;
+  phone: string | null;
+  guests: number | null;
   attendance: string;
-  dietary: string;
-  love_song: string;
-  first_thought: string;
-  message: string;
-  accommodation: boolean;
-  transportation: boolean;
-  line: string;
-  created_at: string;
+  dietary: string | null;
+  love_song: string | null;
+  first_thought: string | null;
+  message: string | null;
+  accommodation: boolean | null;
+  transportation: boolean | null;
+  line: string | null;
+  created_at: string | null;
+  updated_at?: string | null;
 }
 
 const AdminReport = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
     // Check localStorage for existing session (valid for 24 hours)
     const savedSession = localStorage.getItem('wedding-admin-session');
     if (savedSession) {
       const { timestamp, authenticated } = JSON.parse(savedSession);
       const twentyFourHours = 24 * 60 * 60 * 1000;
       if (authenticated && Date.now() - timestamp < twentyFourHours) {
-        return true;
+        setIsAuthenticated(true);
       }
     }
-    return false;
-  });
+  }, []);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submissions, setSubmissions] = useState<RSVPSubmission[]>([]);
@@ -124,7 +126,7 @@ const AdminReport = () => {
       
     } catch (error) {
       console.error('Error fetching submissions:', error);
-      alert(`Error loading data: ${error.message}`);
+      alert(`Error loading data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
     setLoading(false);
   };
@@ -157,8 +159,8 @@ const AdminReport = () => {
 
     // Apply sort
     filtered.sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
       return currentSort === 'newest' ? dateB - dateA : dateA - dateB;
     });
 
@@ -514,9 +516,9 @@ const AdminReport = () => {
                         <td className="px-4 py-4 text-center">
                           <div className="text-xs text-deep-blue/60">
                             <Calendar className="w-3 h-3 inline mr-1" />
-                            {new Date(submission.created_at).toLocaleDateString()}
+                            {submission.created_at ? new Date(submission.created_at).toLocaleDateString() : 'N/A'}
                             <br />
-                            {new Date(submission.created_at).toLocaleTimeString()}
+                            {submission.created_at ? new Date(submission.created_at).toLocaleTimeString() : ''}
                           </div>
                         </td>
                         </tr>
@@ -550,7 +552,7 @@ const AdminReport = () => {
                         }`}>
                           {submission.attendance === 'yes' ? '✓ Yes' : '✗ No'}
                         </span>
-                        <div className="text-lg font-bold text-pacific-cyan">{submission.guests} guest{submission.guests > 1 ? 's' : ''}</div>
+                        <div className="text-lg font-bold text-pacific-cyan">{submission.guests ?? 0} guest{(submission.guests ?? 0) > 1 ? 's' : ''}</div>
                       </div>
                     </div>
 
@@ -628,7 +630,7 @@ const AdminReport = () => {
                     <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                       <div className="flex items-center text-xs text-deep-blue/60">
                         <Calendar className="w-3 h-3 mr-1" />
-                        {new Date(submission.created_at).toLocaleDateString()} at {new Date(submission.created_at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                        {submission.created_at ? `${new Date(submission.created_at).toLocaleDateString()} at ${new Date(submission.created_at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}` : 'N/A'}
                       </div>
                     </div>
                   </div>

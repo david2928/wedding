@@ -44,283 +44,44 @@ export type Database = {
         }
         Relationships: []
       }
-      guest_details: {
+      error_logs: {
         Row: {
-          age_category: string
           created_at: string | null
-          dietary_notes: string | null
-          dietary_preference: string | null
-          guest_index: number
+          error_message: string | null
+          error_step: string | null
+          guest_count: number | null
           id: string
-          main_course_selection: string | null
-          name: string
-          party_id: string
+          party_code: string | null
+          party_id: string | null
+          stack_trace: string | null
+          url: string | null
+          user_agent: string | null
         }
         Insert: {
-          age_category?: string
           created_at?: string | null
-          dietary_notes?: string | null
-          dietary_preference?: string | null
-          guest_index?: number
+          error_message?: string | null
+          error_step?: string | null
+          guest_count?: number | null
           id?: string
-          main_course_selection?: string | null
-          name: string
-          party_id: string
+          party_code?: string | null
+          party_id?: string | null
+          stack_trace?: string | null
+          url?: string | null
+          user_agent?: string | null
         }
         Update: {
-          age_category?: string
           created_at?: string | null
-          dietary_notes?: string | null
-          dietary_preference?: string | null
-          guest_index?: number
+          error_message?: string | null
+          error_step?: string | null
+          guest_count?: number | null
           id?: string
-          main_course_selection?: string | null
-          name?: string
-          party_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "guest_details_party_id_fkey"
-            columns: ["party_id"]
-            isOneToOne: false
-            referencedRelation: "guest_parties"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      guest_parties: {
-        Row: {
-          code: string
-          created_at: string | null
-          email: string | null
-          google_email: string | null
-          google_user_id: string | null
-          id: string
-          party_size: number
-          primary_guest_name: string
-          status: string
-          updated_at: string | null
-        }
-        Insert: {
-          code: string
-          created_at?: string | null
-          email?: string | null
-          google_email?: string | null
-          google_user_id?: string | null
-          id?: string
-          party_size?: number
-          primary_guest_name: string
-          status?: string
-          updated_at?: string | null
-        }
-        Update: {
-          code?: string
-          created_at?: string | null
-          email?: string | null
-          google_email?: string | null
-          google_user_id?: string | null
-          id?: string
-          party_size?: number
-          primary_guest_name?: string
-          status?: string
-          updated_at?: string | null
+          party_code?: string | null
+          party_id?: string | null
+          stack_trace?: string | null
+          url?: string | null
+          user_agent?: string | null
         }
         Relationships: []
-      }
-      guests: {
-        Row: {
-          age_group: string | null
-          attendance_probability: number | null
-          created_at: string
-          dietary_requirements: string | null
-          drinks_alcohol: boolean | null
-          email: string | null
-          first_name: string | null
-          food_preference: string | null
-          id: string
-          internal_name: string | null
-          party_id: string | null
-          phone: string | null
-          rsvp_status: string | null
-        }
-        Insert: {
-          age_group?: string | null
-          attendance_probability?: number | null
-          created_at?: string
-          dietary_requirements?: string | null
-          drinks_alcohol?: boolean | null
-          email?: string | null
-          first_name?: string | null
-          food_preference?: string | null
-          id?: string
-          internal_name?: string | null
-          party_id?: string | null
-          phone?: string | null
-          rsvp_status?: string | null
-        }
-        Update: {
-          age_group?: string | null
-          attendance_probability?: number | null
-          created_at?: string
-          dietary_requirements?: string | null
-          drinks_alcohol?: boolean | null
-          email?: string | null
-          first_name?: string | null
-          food_preference?: string | null
-          id?: string
-          internal_name?: string | null
-          party_id?: string | null
-          phone?: string | null
-          rsvp_status?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "guests_party_id_fkey"
-            columns: ["party_id"]
-            isOneToOne: false
-            referencedRelation: "parties"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      logistics: {
-        Row: {
-          accommodation_name: string | null
-          created_at: string
-          flight_number: string | null
-          has_own_transport: boolean | null
-          id: string
-          notes: string | null
-          party_id: string | null
-          pickup_location: string | null
-          pickup_time: string | null
-          pickup_type: string | null
-          updated_at: string
-        }
-        Insert: {
-          accommodation_name?: string | null
-          created_at?: string
-          flight_number?: string | null
-          has_own_transport?: boolean | null
-          id?: string
-          notes?: string | null
-          party_id?: string | null
-          pickup_location?: string | null
-          pickup_time?: string | null
-          pickup_type?: string | null
-          updated_at?: string
-        }
-        Update: {
-          accommodation_name?: string | null
-          created_at?: string
-          flight_number?: string | null
-          has_own_transport?: boolean | null
-          id?: string
-          notes?: string | null
-          party_id?: string | null
-          pickup_location?: string | null
-          pickup_time?: string | null
-          pickup_type?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "logistics_party_id_fkey"
-            columns: ["party_id"]
-            isOneToOne: true
-            referencedRelation: "parties"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      parties: {
-        Row: {
-          code: string | null
-          created_at: string
-          from_side: string | null
-          google_email: string | null
-          google_user_id: string | null
-          id: string
-          legacy_id: number | null
-          name: string
-          status: string | null
-          type: string | null
-        }
-        Insert: {
-          code?: string | null
-          created_at?: string
-          from_side?: string | null
-          google_email?: string | null
-          google_user_id?: string | null
-          id?: string
-          legacy_id?: number | null
-          name: string
-          status?: string | null
-          type?: string | null
-        }
-        Update: {
-          code?: string | null
-          created_at?: string
-          from_side?: string | null
-          google_email?: string | null
-          google_user_id?: string | null
-          id?: string
-          legacy_id?: number | null
-          name: string
-          status?: string | null
-          type?: string | null
-        }
-        Relationships: []
-      }
-      party_logistics: {
-        Row: {
-          accommodation_name: string | null
-          created_at: string | null
-          flight_number: string | null
-          has_own_transport: boolean | null
-          id: string
-          notes: string | null
-          party_id: string
-          pickup_location: string | null
-          pickup_time: string | null
-          pickup_type: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          accommodation_name?: string | null
-          created_at?: string | null
-          flight_number?: string | null
-          has_own_transport?: boolean | null
-          id?: string
-          notes?: string | null
-          party_id: string
-          pickup_location?: string | null
-          pickup_time?: string | null
-          pickup_type?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          accommodation_name?: string | null
-          created_at?: string | null
-          flight_number?: string | null
-          has_own_transport?: boolean | null
-          id?: string
-          notes?: string | null
-          party_id: string
-          pickup_location?: string | null
-          pickup_time?: string | null
-          pickup_type?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "party_logistics_party_id_fkey"
-            columns: ["party_id"]
-            isOneToOne: true
-            referencedRelation: "guest_parties"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       game_completions: {
         Row: {
@@ -351,6 +112,13 @@ export type Database = {
           station_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "game_completions_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard"
+            referencedColumns: ["party_id"]
+          },
           {
             foreignKeyName: "game_completions_party_id_fkey"
             columns: ["party_id"]
@@ -400,6 +168,332 @@ export type Database = {
           name?: string
           requires_upload?: boolean | null
           station_id?: string
+        }
+        Relationships: []
+      }
+      guests: {
+        Row: {
+          age_group: string | null
+          attendance_probability: number | null
+          created_at: string
+          dietary_requirements: string | null
+          drinks_alcohol: boolean | null
+          email: string | null
+          first_name: string | null
+          food_preference: string | null
+          id: string
+          internal_name: string | null
+          party_id: string | null
+          phone: string | null
+          rsvp_status: string | null
+          table_number: string | null
+        }
+        Insert: {
+          age_group?: string | null
+          attendance_probability?: number | null
+          created_at?: string
+          dietary_requirements?: string | null
+          drinks_alcohol?: boolean | null
+          email?: string | null
+          first_name?: string | null
+          food_preference?: string | null
+          id?: string
+          internal_name?: string | null
+          party_id?: string | null
+          phone?: string | null
+          rsvp_status?: string | null
+          table_number?: string | null
+        }
+        Update: {
+          age_group?: string | null
+          attendance_probability?: number | null
+          created_at?: string
+          dietary_requirements?: string | null
+          drinks_alcohol?: boolean | null
+          email?: string | null
+          first_name?: string | null
+          food_preference?: string | null
+          id?: string
+          internal_name?: string | null
+          party_id?: string | null
+          phone?: string | null
+          rsvp_status?: string | null
+          table_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guests_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard"
+            referencedColumns: ["party_id"]
+          },
+          {
+            foreignKeyName: "guests_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_quiz_answers: {
+        Row: {
+          answer: string
+          answered_at: string | null
+          id: string
+          is_correct: boolean
+          party_id: string
+          points_earned: number | null
+          question_id: string
+          session_id: string
+          time_taken_ms: number | null
+        }
+        Insert: {
+          answer: string
+          answered_at?: string | null
+          id?: string
+          is_correct?: boolean
+          party_id: string
+          points_earned?: number | null
+          question_id: string
+          session_id: string
+          time_taken_ms?: number | null
+        }
+        Update: {
+          answer?: string
+          answered_at?: string | null
+          id?: string
+          is_correct?: boolean
+          party_id?: string
+          points_earned?: number | null
+          question_id?: string
+          session_id?: string
+          time_taken_ms?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_quiz_answers_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard"
+            referencedColumns: ["party_id"]
+          },
+          {
+            foreignKeyName: "live_quiz_answers_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_quiz_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_quiz_answers_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_quiz_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_quiz_participants: {
+        Row: {
+          correct_answers: number | null
+          has_games_bonus: boolean | null
+          id: string
+          joined_at: string | null
+          party_id: string
+          party_name: string
+          session_id: string
+          total_score: number | null
+        }
+        Insert: {
+          correct_answers?: number | null
+          has_games_bonus?: boolean | null
+          id?: string
+          joined_at?: string | null
+          party_id: string
+          party_name: string
+          session_id: string
+          total_score?: number | null
+        }
+        Update: {
+          correct_answers?: number | null
+          has_games_bonus?: boolean | null
+          id?: string
+          joined_at?: string | null
+          party_id?: string
+          party_name?: string
+          session_id?: string
+          total_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_quiz_participants_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard"
+            referencedColumns: ["party_id"]
+          },
+          {
+            foreignKeyName: "live_quiz_participants_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_quiz_participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_quiz_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_quiz_sessions: {
+        Row: {
+          created_at: string | null
+          current_question_id: string | null
+          current_question_index: number | null
+          ended_at: string | null
+          id: string
+          question_started_at: string | null
+          started_at: string | null
+          status: string
+          time_limit_seconds: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_question_id?: string | null
+          current_question_index?: number | null
+          ended_at?: string | null
+          id?: string
+          question_started_at?: string | null
+          started_at?: string | null
+          status?: string
+          time_limit_seconds?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          current_question_id?: string | null
+          current_question_index?: number | null
+          ended_at?: string | null
+          id?: string
+          question_started_at?: string | null
+          started_at?: string | null
+          status?: string
+          time_limit_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_quiz_sessions_current_question_id_fkey"
+            columns: ["current_question_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      logistics: {
+        Row: {
+          accommodation_name: string | null
+          created_at: string
+          flight_number: string | null
+          has_own_transport: boolean | null
+          id: string
+          notes: string | null
+          party_id: string | null
+          pickup_location: string | null
+          pickup_time: string | null
+          pickup_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          accommodation_name?: string | null
+          created_at?: string
+          flight_number?: string | null
+          has_own_transport?: boolean | null
+          id?: string
+          notes?: string | null
+          party_id?: string | null
+          pickup_location?: string | null
+          pickup_time?: string | null
+          pickup_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accommodation_name?: string | null
+          created_at?: string
+          flight_number?: string | null
+          has_own_transport?: boolean | null
+          id?: string
+          notes?: string | null
+          party_id?: string | null
+          pickup_location?: string | null
+          pickup_time?: string | null
+          pickup_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logistics_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: true
+            referencedRelation: "leaderboard"
+            referencedColumns: ["party_id"]
+          },
+          {
+            foreignKeyName: "logistics_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: true
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parties: {
+        Row: {
+          code: string | null
+          created_at: string
+          from_side: string | null
+          google_email: string | null
+          google_user_id: string | null
+          id: string
+          legacy_id: number | null
+          name: string
+          status: string | null
+          type: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          from_side?: string | null
+          google_email?: string | null
+          google_user_id?: string | null
+          id?: string
+          legacy_id?: number | null
+          name: string
+          status?: string | null
+          type?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          from_side?: string | null
+          google_email?: string | null
+          google_user_id?: string | null
+          id?: string
+          legacy_id?: number | null
+          name?: string
+          status?: string | null
+          type?: string | null
         }
         Relationships: []
       }
@@ -484,6 +578,13 @@ export type Database = {
             foreignKeyName: "quiz_submissions_party_id_fkey"
             columns: ["party_id"]
             isOneToOne: true
+            referencedRelation: "leaderboard"
+            referencedColumns: ["party_id"]
+          },
+          {
+            foreignKeyName: "quiz_submissions_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: true
             referencedRelation: "parties"
             referencedColumns: ["id"]
           },
@@ -538,7 +639,7 @@ export type Database = {
           line?: string | null
           love_song?: string | null
           message?: string | null
-          name: string
+          name?: string
           nickname?: string | null
           phone?: string | null
           transportation?: boolean | null
@@ -548,10 +649,32 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      leaderboard: {
+        Row: {
+          completed_at: string | null
+          from_side: string | null
+          games_completed: number | null
+          party_id: string | null
+          party_name: string | null
+          rank: number | null
+          time_taken_seconds: number | null
+          total_questions: number | null
+          total_score: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      bulk_update_guests: { Args: { guest_updates: Json }; Returns: Json }
+      increment_participant_score: {
+        Args: {
+          p_is_correct?: boolean
+          p_party_id: string
+          p_points: number
+          p_session_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -13,11 +13,11 @@ import {
 
 interface Party {
   id: string;
-  code: string;
+  code: string | null;
   name: string;
   type: string | null;
   from_side: string | null;
-  status: string;
+  status: string | null;
   google_user_id: string | null;
   google_email: string | null;
   created_at: string;
@@ -28,7 +28,7 @@ interface Party {
 
 interface Guest {
   id: string;
-  party_id: string;
+  party_id: string | null;
   first_name: string | null;
   internal_name: string | null;
   age_group: string | null;
@@ -39,7 +39,7 @@ interface Guest {
 }
 
 interface Logistics {
-  party_id: string;
+  party_id: string | null;
   has_own_transport: boolean | null;
   pickup_type: string | null;
   pickup_location: string | null;
@@ -51,26 +51,30 @@ interface Logistics {
 
 interface ErrorLog {
   id: string;
-  created_at: string;
+  created_at: string | null;
   party_code: string | null;
+  party_id: string | null;
   error_message: string | null;
   error_step: string | null;
+  stack_trace: string | null;
+  url: string | null;
   user_agent: string | null;
   guest_count: number | null;
 }
 
 const GuestAdmin = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
     const savedSession = localStorage.getItem('wedding-admin-session');
     if (savedSession) {
       const { timestamp, authenticated } = JSON.parse(savedSession);
       const twentyFourHours = 24 * 60 * 60 * 1000;
       if (authenticated && Date.now() - timestamp < twentyFourHours) {
-        return true;
+        setIsAuthenticated(true);
       }
     }
-    return false;
-  });
+  }, []);
 
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -86,7 +90,7 @@ const GuestAdmin = () => {
   const [showErrors, setShowErrors] = useState(false);
 
   const correctPassword = 'ChanikaDavid2026!';
-  const baseUrl = window.location.origin;
+  const getBaseUrl = () => typeof window !== 'undefined' ? window.location.origin : '';
 
   const handleLogin = () => {
     if (password === correctPassword) {
@@ -167,7 +171,7 @@ const GuestAdmin = () => {
   };
 
   const copyToClipboard = (code: string) => {
-    navigator.clipboard.writeText(`${baseUrl}/guest/${code}`);
+    navigator.clipboard.writeText(`${getBaseUrl()}/guest/${code}`);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2000);
   };
@@ -176,7 +180,7 @@ const GuestAdmin = () => {
     const firstName = party.guests[0]?.first_name || party.guests[0]?.internal_name || party.name;
     const message = `Hi ${firstName},
 
-Our wedding is coming up! Please help us finalize guest details by opening this link in a browser (not LINE browser) and signing in with Google: ${baseUrl}/guest/${party.code}
+Our wedding is coming up! Please help us finalize guest details by opening this link in a browser (not LINE browser) and signing in with Google: ${getBaseUrl()}/guest/${party.code}
 
 Thanks!
 C&D`;
@@ -213,7 +217,7 @@ C&D`;
             <div class="card">
               <div class="name">${p.name}</div>
               <div class="qr">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${baseUrl}/guest/${p.code}`)}" />
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${getBaseUrl()}/guest/${p.code}`)}" />
               </div>
               <div class="code">${p.code}</div>
               <div style="font-size: 10px; color: #999;">Party of ${p.guests.length}</div>
@@ -261,13 +265,13 @@ C&D`;
 
   const filteredParties = parties.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          p.code.toLowerCase().includes(searchTerm.toLowerCase());
+                          (p.code?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
     const matchesStatus = filterStatus === 'all' || p.status === filterStatus;
     const matchesType = filterType === 'all' || p.type === filterType;
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const partyTypes = ['all', ...new Set(parties.map(p => p.type).filter(Boolean))];
+  const partyTypes: string[] = ['all', ...new Set(parties.map(p => p.type).filter((t): t is string => Boolean(t)))];
 
   const completedParties = parties.filter(p => p.status === 'completed');
   const pendingParties = parties.filter(p => p.status === 'pending');
@@ -436,7 +440,7 @@ C&D`;
                         )}
                       </div>
                       <div className="text-xs text-red-600 whitespace-nowrap">
-                        {new Date(log.created_at).toLocaleString()}
+                        {log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A'}
                       </div>
                     </div>
                   </div>
@@ -524,7 +528,7 @@ C&D`;
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <QRCodeSVG value={`${baseUrl}/guest/${party.code}`} size={40} />
+                        <QRCodeSVG value={`${getBaseUrl()}/guest/${party.code}`} size={40} />
                       </div>
                       <div>
                         <div className="font-semibold text-deep-blue">{party.name}</div>
@@ -561,7 +565,7 @@ C&D`;
                     <div className="grid md:grid-cols-3 gap-6">
                       <div className="text-center">
                         <div className="bg-white p-4 rounded-lg inline-block mb-3">
-                          <QRCodeSVG value={`${baseUrl}/guest/${party.code}`} size={120} />
+                          <QRCodeSVG value={`${getBaseUrl()}/guest/${party.code}`} size={120} />
                         </div>
                         {party.google_email && (
                           <div className="mb-3 text-xs text-deep-blue/60 bg-white px-3 py-2 rounded-lg">
@@ -569,17 +573,19 @@ C&D`;
                             <div className="break-all">{party.google_email}</div>
                           </div>
                         )}
-                        <div className="space-y-2">
-                          <Button size="sm" variant="outline" onClick={() => copyToClipboard(party.code)} className="w-full bg-white border-sky-blue text-sky-blue">
-                            {copiedCode === party.code ? <><Check className="w-4 h-4 mr-2" /> Copied!</> : <><Copy className="w-4 h-4 mr-2" /> Copy Link</>}
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => copyMessage(party)} className="w-full bg-white border-ocean-blue text-ocean-blue">
-                            {copiedMessage === party.code ? <><Check className="w-4 h-4 mr-2" /> Copied!</> : <><Copy className="w-4 h-4 mr-2" /> Copy Message</>}
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => window.open(`/guest/${party.code}`, '_blank')} className="w-full bg-white border-sky-blue text-sky-blue">
-                            <ExternalLink className="w-4 h-4 mr-2" /> Open Form
-                          </Button>
-                        </div>
+                        {party.code && (
+                          <div className="space-y-2">
+                            <Button size="sm" variant="outline" onClick={() => copyToClipboard(party.code!)} className="w-full bg-white border-sky-blue text-sky-blue">
+                              {copiedCode === party.code ? <><Check className="w-4 h-4 mr-2" /> Copied!</> : <><Copy className="w-4 h-4 mr-2" /> Copy Link</>}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => copyMessage(party)} className="w-full bg-white border-ocean-blue text-ocean-blue">
+                              {copiedMessage === party.code ? <><Check className="w-4 h-4 mr-2" /> Copied!</> : <><Copy className="w-4 h-4 mr-2" /> Copy Message</>}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => window.open(`/guest/${party.code}`, '_blank')} className="w-full bg-white border-sky-blue text-sky-blue">
+                              <ExternalLink className="w-4 h-4 mr-2" /> Open Form
+                            </Button>
+                          </div>
+                        )}
                       </div>
 
                       <div>

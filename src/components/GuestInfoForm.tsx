@@ -13,7 +13,7 @@ import type { User } from '@supabase/supabase-js';
 
 interface Party {
   id: string;
-  code: string;
+  code: string | null;
   name: string;
   status: string | null;
   from_side: string | null;
@@ -23,7 +23,7 @@ interface Party {
 
 interface Guest {
   id: string;
-  party_id: string;
+  party_id: string | null;
   first_name: string | null;
   internal_name: string | null; // This now holds the original nickname from CSV
   age_group: 'Adult' | 'Child' | 'Toddler' | null;
@@ -35,7 +35,7 @@ interface Guest {
 
 interface Logistics {
   id: string;
-  party_id: string;
+  party_id: string | null;
   has_own_transport: boolean | null;
   pickup_type: 'airport' | 'hotel' | 'other' | null;
   pickup_location: string | null;
