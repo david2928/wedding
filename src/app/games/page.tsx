@@ -161,11 +161,11 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
         setCompletions(completionsData || [])
       }
 
-      // Check if there's an active quiz session
+      // Check if there's an active quiz session (only when quiz is actually running)
       const { data: activeSession } = await supabase
         .from('live_quiz_sessions')
         .select('id')
-        .in('status', ['waiting', 'active', 'showing_answer'])
+        .in('status', ['active', 'showing_answer'])
         .limit(1)
         .single()
 
