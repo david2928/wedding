@@ -194,11 +194,11 @@ export function GuestGate({ children, onPartyResolved, pageName = 'this page' }:
             <p className="text-white/90">Chanika & David's Wedding</p>
           </div>
           <div className="p-8 text-center">
-            <h2 className="text-xl font-semibold text-deep-blue mb-2">
-              Sign in to access {pageName}
-            </h2>
-            <p className="text-deep-blue/70 mb-8">
-              Please sign in with the Google account you used for your RSVP.
+            <p className="text-deep-blue/80 mb-6">
+              Sign in with Google to join the celebration!
+            </p>
+            <p className="text-deep-blue/60 text-sm mb-8">
+              Tip: Use the same account you used for your RSVP.
             </p>
 
             {error && (
@@ -230,26 +230,30 @@ export function GuestGate({ children, onPartyResolved, pageName = 'this page' }:
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#fcf6eb' }}>
         <div className="rounded-2xl shadow-xl overflow-hidden max-w-md w-full" style={{ backgroundColor: '#FDFBF7' }}>
-          <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-8 text-white text-center">
-            <AlertCircle className="w-16 h-16 mx-auto mb-4" />
-            <h1 className="font-dancing text-3xl italic mb-2">Not on Guest List</h1>
-            <p className="text-white/90">We couldn't find you</p>
+          <div className="bg-gradient-to-r from-ocean-blue to-sky-blue p-8 text-white text-center">
+            <img
+              src="/android-chrome-192x192.png"
+              alt="C&D Logo"
+              className="w-20 h-20 mx-auto mb-4"
+            />
+            <h1 className="font-dancing text-3xl italic mb-2">One More Step!</h1>
+            <p className="text-white/90">Let's get you set up</p>
           </div>
           <div className="p-8">
             <div className="text-center mb-6">
               <p className="text-deep-blue/80 mb-2">
-                The account <strong>{user?.email}</strong> isn't linked to any RSVP.
+                We couldn't find <strong>{user?.email}</strong> in our guest list.
               </p>
               <p className="text-deep-blue/60 text-sm">
-                This might happen if you used a different Google account for your RSVP.
+                No worries! This usually happens if you used a different account for your RSVP.
               </p>
             </div>
 
             {/* Recommended option */}
             <div className="bg-ocean-blue/10 border border-ocean-blue/30 rounded-xl p-4 mb-4">
-              <p className="text-sm font-medium text-ocean-blue mb-2">Recommended</p>
+              <p className="text-sm font-medium text-ocean-blue mb-2">If you've already RSVP'd</p>
               <p className="text-deep-blue/70 text-sm mb-3">
-                Sign in with the same Google account you used when completing your RSVP.
+                Try signing in with the Google account you used for your RSVP.
               </p>
               <Button
                 onClick={handleTryDifferentAccount}
@@ -261,9 +265,9 @@ export function GuestGate({ children, onPartyResolved, pageName = 'this page' }:
 
             {/* Alternative option */}
             <div className="border border-gray-200 rounded-xl p-4">
-              <p className="text-sm font-medium text-deep-blue/70 mb-2">Or continue anyway</p>
+              <p className="text-sm font-medium text-deep-blue/70 mb-2">First time here?</p>
               <p className="text-deep-blue/60 text-sm mb-3">
-                Join as a walk-in guest. You can still participate in all activities!
+                Join as a guest and enjoy all the wedding activities!
               </p>
               <Button
                 onClick={handleContinueAsWalkIn}
@@ -271,7 +275,7 @@ export function GuestGate({ children, onPartyResolved, pageName = 'this page' }:
                 className="w-full border-gray-300"
               >
                 <UserPlus className="w-4 h-4 mr-2" />
-                Continue as Walk-in Guest
+                Continue as Guest
               </Button>
             </div>
           </div>
@@ -286,13 +290,17 @@ export function GuestGate({ children, onPartyResolved, pageName = 'this page' }:
       <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#fcf6eb' }}>
         <div className="rounded-2xl shadow-xl overflow-hidden max-w-md w-full" style={{ backgroundColor: '#FDFBF7' }}>
           <div className="bg-gradient-to-r from-ocean-blue to-sky-blue p-8 text-white text-center">
-            <UserPlus className="w-16 h-16 mx-auto mb-4" />
+            <img
+              src="/android-chrome-192x192.png"
+              alt="C&D Logo"
+              className="w-20 h-20 mx-auto mb-4"
+            />
             <h1 className="font-dancing text-3xl italic mb-2">Welcome!</h1>
-            <p className="text-white/90">Join as a walk-in guest</p>
+            <p className="text-white/90">We're so glad you're here</p>
           </div>
           <div className="p-8">
             <p className="text-deep-blue/70 text-center mb-6">
-              Please enter your name so we know who you are!
+              What should we call you?
             </p>
 
             {error && (
@@ -319,10 +327,10 @@ export function GuestGate({ children, onPartyResolved, pageName = 'this page' }:
                 {status === 'creating-walkin' ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Creating profile...
+                    Setting up...
                   </>
                 ) : (
-                  'Continue'
+                  'Let's Go!'
                 )}
               </Button>
 

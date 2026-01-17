@@ -87,22 +87,23 @@ export default function BigDayPage() {
 
   // Dev mode active - show content directly
   if (devMode) {
-    return <BigDayContent partyId={party?.id || null} />
+    return <BigDayContent partyId={party?.id || null} isWalkIn={party?.type === 'walk-in'} />
   }
 
   // Production - use GuestGate
   return (
     <GuestGate pageName="the big day info" onPartyResolved={handlePartyResolved}>
-      <BigDayContent partyId={party?.id || null} />
+      <BigDayContent partyId={party?.id || null} isWalkIn={party?.type === 'walk-in'} />
     </GuestGate>
   )
 }
 
 interface BigDayContentProps {
   partyId: string | null
+  isWalkIn?: boolean
 }
 
-function BigDayContent({ partyId }: BigDayContentProps) {
+function BigDayContent({ partyId, isWalkIn = false }: BigDayContentProps) {
   return (
     <div
       className="min-h-screen py-8 px-4"
@@ -130,8 +131,8 @@ function BigDayContent({ partyId }: BigDayContentProps) {
         {/* Quick Links */}
         <QuickLinks />
 
-        {/* Seating Section */}
-        <SeatingSection partyId={partyId} />
+        {/* Seating Section - hidden for walk-in guests */}
+        {!isWalkIn && <SeatingSection partyId={partyId} />}
 
         {/* Menu Section */}
         <MenuSection />
