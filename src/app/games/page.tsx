@@ -357,6 +357,7 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
                 Available at Dinner
               </Button>
             )}
+          </div>
         </div>
       </div>
     </div>
