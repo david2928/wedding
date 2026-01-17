@@ -1,26 +1,306 @@
 @import "tailwindcss";
 
+/* Wedding Color Palette */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: 253 251 247;
+  --foreground: 15 23 42;
+
+  --card: 253 251 247;
+  --card-foreground: 15 23 42;
+
+  --popover: 253 251 247;
+  --popover-foreground: 15 23 42;
+
+  --primary: 14 165 233;
+  --primary-foreground: 253 251 247;
+
+  --secondary: 219 234 254;
+  --secondary-foreground: 15 23 42;
+
+  --muted: 219 234 254;
+  --muted-foreground: 51 65 85;
+
+  --accent: 144 224 239;
+  --accent-foreground: 15 23 42;
+
+  --destructive: 239 68 68;
+  --destructive-foreground: 253 251 247;
+
+  --border: 219 234 254;
+  --input: 219 234 254;
+  --ring: 14 165 233;
+
+  --radius: 1rem;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Color palette - using rgb() not hsl() since :root values are RGB */
+  --color-background: rgb(var(--background));
+  --color-foreground: rgb(var(--foreground));
+  --color-card: rgb(var(--card));
+  --color-card-foreground: rgb(var(--card-foreground));
+  --color-popover: rgb(var(--popover));
+  --color-popover-foreground: rgb(var(--popover-foreground));
+  --color-primary*: rgb(var(--primary));
+  --color-primary-foreground: rgb(var(--primary-foreground));
+  --color-secondary*: rgb(var(--secondary));
+  --color-secondary-foreground: rgb(var(--secondary-foreground));
+  --color-muted*: rgb(var(--muted));
+  --color-muted-foreground: rgb(var(--muted-foreground));
+  --color-accent*: rgb(var(--accent));
+  --color-accent-foreground: rgb(var(--accent-foreground));
+  --color-destructive*: rgb(var(--destructive));
+  --color-destructive-foreground: rgb(var(--destructive-foreground));
+  --color-border: rgb(var(--border));
+  --color-input: rgb(var(--input));
+  --color-ring: rgb(var(--ring));
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* Wedding color palette */
+  --color-federal-blue: #03045E;
+  --color-honolulu-blue: #0077B6;
+  --color-pacific-cyan: #00B4D8;
+  --color-non-photo-blue: #90E0EF;
+  --color-light-cyan: #CAF0F8;
+  --color-ocean-blue: #0284C7;
+  --color-sky-blue: #0EA5E9;
+  --color-navy-blue: #1E40AF;
+  --color-light-blue: #7DD3FC;
+  --color-deep-blue: #0F172A;
+  --color-powder-blue: #93C5FD;
+  --color-pale-blue: #DBEAFE;
+  --color-royal-blue: #1E3A8A;
+  --color-soft-white: #FDFBF7;
+  --color-cream-beige: #fcf6eb;
+  --color-warm-beige: #eee0d2;
+  --color-turquoise: #1da8cd;
+  --color-teal: #1185b2;
+
+  /* Border radius */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* Font families */
+  --font-family-poppins: 'Poppins', sans-serif;
+  --font-family-dancing: 'Dancing Script', cursive;
+  --font-family-inter: 'Inter', sans-serif;
+
+  /* Animations */
+  --animate-wave: wave 2s ease-in-out infinite;
+  --animate-float: float 3s ease-in-out infinite;
+  --animate-sparkle: sparkle 2s ease-in-out infinite;
+  --animate-fade-in-up: fade-in-up 0.6s ease-out;
+
+  @keyframes wave {
+    0% { transform: rotate(0deg); }
+    10% { transform: rotate(14deg); }
+    20% { transform: rotate(-8deg); }
+    30% { transform: rotate(14deg); }
+    40% { transform: rotate(-4deg); }
+    50% { transform: rotate(10deg); }
+    60%, 100% { transform: rotate(0deg); }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes sparkle {
+    0%, 100% {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes fade-in-up {
+    0% {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  /* AGGRESSIVE autofill prevention - prevents ANY yellow backgrounds */
+  * {
+    -webkit-box-shadow: none !important;
+  }
+
+  *:-webkit-autofill,
+  *:-webkit-autofill:hover,
+  *:-webkit-autofill:focus,
+  *:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px white inset !important;
+    box-shadow: 0 0 0 1000px white inset !important;
+    -webkit-text-fill-color: inherit !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+  }
+
+  html {
+    @apply bg-soft-white scroll-smooth;
+    overflow-x: hidden;
+  }
+
+  body {
+    @apply bg-soft-white text-foreground;
+    font-family: var(--font-inter), Inter, sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* Clean autofill styling - prevent yellow backgrounds */
+  /* Note: !important is required here to override browser defaults */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  textarea:-webkit-autofill:active,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px white inset !important;
+    box-shadow: 0 0 0 1000px white inset !important;
+    -webkit-text-fill-color: rgb(15, 23, 42) !important;
+    background-color: white !important;
+    border-color: rgb(125, 211, 252) !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+  }
+
+  /* Force border color on focus for autofilled inputs */
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill:focus {
+    border-color: rgb(14, 165, 233) !important;
+  }
+
+  /* Extra specific rules for form inputs */
+  input[type="text"]:-webkit-autofill,
+  input[type="email"]:-webkit-autofill,
+  input[type="password"]:-webkit-autofill,
+  input[name="name"]:-webkit-autofill,
+  input[name="email"]:-webkit-autofill,
+  input[name="subject"]:-webkit-autofill,
+  input[id*="contact"]:-webkit-autofill,
+  input[placeholder]:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px white inset !important;
+    box-shadow: 0 0 0 1000px white inset !important;
+    -webkit-text-fill-color: rgb(15, 23, 42) !important;
+    background-color: white !important;
+    background-image: none !important;
+    color: rgb(15, 23, 42) !important;
+  }
+
+  /* Prevent autofill styling on buttons */
+  button:-webkit-autofill,
+  button:-webkit-autofill:hover,
+  button:-webkit-autofill:focus,
+  button:-webkit-autofill:active {
+    -webkit-box-shadow: none !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    -webkit-text-fill-color: inherit !important;
+    transition: none !important;
+  }
+
+  /* Prevent autofill styling on divs and other elements */
+  div:-webkit-autofill,
+  div:-webkit-autofill:hover,
+  div:-webkit-autofill:focus,
+  section:-webkit-autofill,
+  article:-webkit-autofill {
+    -webkit-box-shadow: none !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    -webkit-text-fill-color: inherit !important;
+    transition: none !important;
+  }
+}
+
+@layer utilities {
+  /* Font family utilities */
+  .font-dancing {
+    font-family: var(--font-dancing), 'Dancing Script', cursive;
+  }
+
+  .font-poppins {
+    font-family: var(--font-poppins), 'Poppins', sans-serif;
+  }
+
+  .font-inter {
+    font-family: var(--font-inter), 'Inter', sans-serif;
+  }
+
+  .text-shadow-lg {
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Mobile video optimization */
+  @media (max-width: 768px) {
+    .hero-video {
+      object-position: center center;
+      height: 100vh;
+      width: 100vw;
+    }
+  }
+}
+
+@layer components {
+  .gradient-ocean {
+    background: linear-gradient(135deg, #0077B6 0%, #03045E 40%, #1E40AF 80%, #0F172A 100%);
+  }
+
+  .gradient-sky {
+    background: linear-gradient(135deg, #CAF0F8 0%, #90E0EF 30%, #DBEAFE 70%, #F0F9FF 100%);
+  }
+
+  .gradient-sunset {
+    background: linear-gradient(135deg, #00B4D8 0%, #0077B6 30%, #03045E 70%, #1E40AF 100%);
+  }
+
+  .floating-card {
+    @apply bg-white/85 backdrop-blur-sm border border-white/40 rounded-2xl shadow-xl;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.8) 100%);
+  }
+
+  .floating-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 25px 50px -12px rgba(14, 165, 233, 0.3);
+  }
+
+  .text-ocean-gradient {
+    background: linear-gradient(135deg, #0077B6, #03045E);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .wave-border {
+    position: relative;
+  }
+
+  .wave-border::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, #0077B6, transparent);
+    border-radius: 2px;
+  }
 }
