@@ -287,19 +287,26 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
           </p>
 
           {quizUnlocked ? (
-            <p className="text-deep-blue/70 mb-6">
-              The quiz is now open! Test your knowledge about David & Chanika.
+            <div className="mb-6">
+              <p className="text-deep-blue/70 mb-2">
+                The quiz is now open! Test your knowledge about David & Chanika.
+              </p>
               {allActiveComplete && (
-                <span className="block text-green-600 text-sm mt-2 font-medium">
+                <p className="text-green-600 text-sm font-medium">
                   +200 bonus points for completing all games!
-                </span>
+                </p>
               )}
-            </p>
+            </div>
           ) : (
             <div className="mb-6">
-              <p className="text-deep-blue/70 mb-3">
-                The quiz will be announced by the host later this evening.
-              </p>
+              <div className="bg-gray-100 border border-gray-300 rounded-lg p-4 mb-4">
+                <p className="text-gray-600 font-medium">
+                  Available during dinner time
+                </p>
+                <p className="text-gray-500 text-sm mt-1">
+                  The host will announce when the quiz begins
+                </p>
+              </div>
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
                 <p className="text-amber-800">
                   <strong>Tip:</strong> Complete all {activeStations.length} games to earn
@@ -322,28 +329,25 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
           )}
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button
-              onClick={handleQuizClick}
-              disabled={!quizUnlocked}
-              size="lg"
-              className={`px-8 py-6 text-lg font-semibold ${
-                quizUnlocked
-                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              {quizUnlocked ? (
-                <>
-                  <Trophy className="w-5 h-5 mr-2" />
-                  Join the Quiz
-                </>
-              ) : (
-                <>
-                  <Lock className="w-5 h-5 mr-2" />
-                  Coming Soon
-                </>
-              )}
-            </Button>
+            {quizUnlocked ? (
+              <Button
+                onClick={handleQuizClick}
+                size="lg"
+                className="px-8 py-6 text-lg font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+              >
+                <Trophy className="w-5 h-5 mr-2" />
+                Join the Quiz
+              </Button>
+            ) : (
+              <Button
+                disabled
+                size="lg"
+                className="px-8 py-6 text-lg font-semibold bg-gray-200 text-gray-400 cursor-not-allowed border-2 border-gray-300"
+              >
+                <Lock className="w-5 h-5 mr-2" />
+                Available at Dinner
+              </Button>
+            )}
             <Button
               onClick={handleLeaderboardClick}
               variant="outline"
