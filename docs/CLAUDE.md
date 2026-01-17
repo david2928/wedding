@@ -50,7 +50,16 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 **File-based routing** - No manual route configuration needed:
 - `src/app/page.tsx` → Home page (/)
 - `src/app/guest/[code]/page.tsx` → Guest info form (/guest/:code)
+- `src/app/big-day/page.tsx` → Wedding day info hub
+- `src/app/games/page.tsx` → Wedding games hub
+- `src/app/games/sunset/page.tsx` → Sunset photo upload
+- `src/app/games/portrait/page.tsx` → Portrait photo upload
+- `src/app/games/selfie/page.tsx` → Selfie photo upload
+- `src/app/live-quiz/page.tsx` → Live quiz (guest view)
+- `src/app/leaderboard/page.tsx` → Public leaderboard
 - `src/app/admin-guests/page.tsx` → Guest admin panel
+- `src/app/admin-games/page.tsx` → Games admin panel
+- `src/app/admin-live-quiz/page.tsx` → Live quiz admin control
 - `src/app/admin-wedding-2026-reports/page.tsx` → Admin reports
 - `src/app/not-found.tsx` → 404 page
 - `src/app/auth/callback/route.ts` → OAuth callback API route
@@ -103,6 +112,23 @@ OAuth flow:
 1. User authenticates → Supabase redirects to `/auth/callback?code=...`
 2. Callback route exchanges code for session via cookies
 3. Redirects to home or specified `next` parameter
+
+### Live Quiz Architecture
+
+The live quiz uses **Supabase Realtime Broadcast** for synchronized quiz during dinner:
+- Admin controls quiz flow at `/admin-live-quiz`
+- Guests join at `/live-quiz`
+- 30-second timer per question with auto-reveal
+- Real-time participant tracking and leaderboard
+
+**Key files**:
+- `src/components/live-quiz/` - Quiz UI components
+- `src/hooks/useLiveQuizChannel.ts` - Realtime subscription
+- `src/lib/live-quiz/scoring.ts` - Points calculation
+
+**Quiz states**: `waiting` → `active` → `showing_answer` → `completed`
+- Only `active` and `showing_answer` make quiz visible to guests
+- `waiting` is admin-only waiting room
 
 ### State Management
 

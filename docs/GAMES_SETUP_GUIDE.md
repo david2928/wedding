@@ -5,11 +5,12 @@ This guide walks you through setting up the wedding gamification system.
 ## Overview
 
 The wedding games feature adds interactive gamification to your wedding website:
-- **6 games** for guests to complete (4 active + 2 placeholders)
-- **Photo upload** for sunset game
+- **5 active games** for guests to complete
+- **Photo upload games**: Sunset, Portrait, and Selfie with C&D
 - **QR code scanning** for quick completion
-- **Final quiz** about the couple (unlocked after completing all active games)
-- **Leaderboard** with rankings and prizes
+- **Live Quiz** - Admin-controlled synchronized quiz during dinner (wins prizes!)
+- **Bonus points** - Completing all games earns +200 points for the quiz
+- **Leaderboard** with rankings
 
 ---
 
@@ -31,18 +32,20 @@ This creates:
 - Leaderboard view
 - Seed data
 
-### Create Storage Bucket
+### Create Storage Buckets
+
+Create **three** storage buckets for photo upload games:
 
 1. Go to **Storage** in Supabase Dashboard
-2. Click **New Bucket**
-3. Configure:
-   - Name: `sunset-photos`
-   - Public: **NO** (private bucket)
-   - File size limit: `10485760` (10 MB)
-   - Allowed MIME types: `image/jpeg,image/png,image/webp`
-4. Click **Create bucket**
+2. For each bucket, click **New Bucket** and configure:
 
-The SQL migration already includes the storage policies.
+| Bucket Name | Public | File Size Limit | MIME Types |
+|-------------|--------|-----------------|------------|
+| `sunset-photos` | YES | 10 MB | `image/jpeg,image/png,image/webp` |
+| `portrait-photos` | YES | 10 MB | `image/jpeg,image/png,image/webp` |
+| `selfie-photos` | YES | 10 MB | `image/jpeg,image/png,image/webp` |
+
+**Note**: Buckets should be public for images to display on success screens. The SQL migration includes storage policies.
 
 ---
 
@@ -87,9 +90,10 @@ You need to generate QR codes for guests to scan at each station.
 #### QR Code URLs
 
 - **Golf**: `https://chanikadavidwedding.com/games/complete/golf`
-- **Portrait**: `https://chanikadavidwedding.com/games/complete/portrait`
 - **Audio**: `https://chanikadavidwedding.com/games/complete/audio`
-- **Sunset**: Guests navigate to `/games` and click the card (no QR needed)
+- **Sunset**: `https://chanikadavidwedding.com/games/sunset` (photo upload)
+- **Portrait**: `https://chanikadavidwedding.com/games/portrait` (photo upload)
+- **Selfie**: `https://chanikadavidwedding.com/games/selfie` (photo upload)
 
 #### Generate QR Codes
 
@@ -114,12 +118,27 @@ Option 2 - **Admin Panel**:
 
 1. **Sign in**: Visit `/games` and sign in with Google
 2. **Complete games**:
-   - Click a game card (golf, portrait, audio)
+   - Click a game card to complete it
    - Or scan a QR code with your phone
-   - Verify it marks as complete
-3. **Upload photo**: Complete the sunset game by uploading an image
-4. **Take quiz**: Once 4/6 games are complete, quiz unlocks
-5. **View leaderboard**: Check your ranking at `/leaderboard`
+   - Verify it marks as complete with green checkmark
+3. **Upload photos**: Complete sunset, portrait, and selfie games by uploading images
+4. **Earn bonus**: Complete all 5 games to earn +200 bonus points for the quiz
+5. **Join quiz**: When the admin starts the live quiz during dinner, join at `/live-quiz`
+6. **View leaderboard**: Check rankings at `/leaderboard`
+
+### Test Live Quiz (Admin)
+
+1. Visit `/admin-live-quiz`
+2. Enter admin password
+3. Click **Create New Session**
+4. Wait for guests to join (visible in participant count)
+5. Click **Start Quiz** to begin
+6. For each question:
+   - Question broadcasts to all guests
+   - 30-second timer counts down
+   - Answer auto-reveals when timer ends
+   - Click **Next Question** to continue
+7. Click **End Quiz** after last question
 
 ### Test Admin Panel
 
@@ -157,11 +176,15 @@ Option 2 - **Admin Panel**:
 | URL | Purpose | Auth Required |
 |-----|---------|---------------|
 | `/games` | Main games hub | Yes |
-| `/games/complete/[stationId]` | QR scan completion | Yes |
-| `/games/sunset` | Photo upload | Yes |
-| `/quiz` | Final trivia quiz | Yes |
+| `/games/complete/[stationId]` | QR scan completion (golf, audio) | Yes |
+| `/games/sunset` | Sunset photo upload | Yes |
+| `/games/portrait` | Portrait photo upload | Yes |
+| `/games/selfie` | Selfie with C&D photo upload | Yes |
+| `/live-quiz` | Live quiz (guest view) | Yes |
 | `/leaderboard` | Public rankings | No |
-| `/admin-games` | Admin panel | Password |
+| `/admin-games` | Games admin panel | Password |
+| `/admin-live-quiz` | Live quiz admin control | Password |
+| `/big-day` | Wedding day info hub | Yes |
 
 ---
 
@@ -218,10 +241,11 @@ Two games are set as "Coming Soon":
 - Verify RLS policies are set (migration should handle this)
 - Check file is under 10MB and correct format (JPEG/PNG/WebP)
 
-### Quiz Won't Unlock
-- Verify all **active** games are complete (not placeholders)
-- Check `game_completions` table has 4 entries for the party
-- Placeholders don't count toward unlock
+### Quiz Shows "Coming Soon"
+- The live quiz only opens when admin creates and starts a session
+- Admin must go to `/admin-live-quiz` and click "Start Quiz"
+- Quiz status must be `active` or `showing_answer` for guests to join
+- `waiting` status (admin waiting room) does NOT open the quiz to guests
 
 ### Leaderboard Empty
 - Ensure quiz has been submitted (not just started)
@@ -235,10 +259,12 @@ Two games are set as "Coming Soon":
 ### Database Tables
 
 ```
-game_stations       - Game definitions (6 games)
-game_completions    - Tracks which parties completed which games
-quiz_questions      - Trivia questions (10 questions)
-quiz_submissions    - Quiz attempts and scores (one per party)
+game_stations           - Game definitions (5 active games)
+game_completions        - Tracks which parties completed which games
+quiz_questions          - Trivia questions for the live quiz
+live_quiz_sessions      - Live quiz session control (status, current question)
+live_quiz_participants  - Participants in each quiz session
+live_quiz_answers       - Guest answers per question with timing
 ```
 
 ### React Query Caching

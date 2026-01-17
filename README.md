@@ -80,22 +80,31 @@ wedding/
 │   ├── app/                            # Next.js App Router
 │   │   ├── layout.tsx                  # Root layout (fonts, metadata, providers)
 │   │   ├── page.tsx                    # Home page
-│   │   ├── globals.css                 # Main stylesheet (196 lines)
+│   │   ├── globals.css                 # Main stylesheet
 │   │   ├── not-found.tsx               # 404 page
+│   │   ├── big-day/                    # Wedding day info hub
 │   │   ├── games/                      # Wedding games hub
-│   │   ├── quiz/                       # Final quiz
+│   │   │   ├── page.tsx                # Games list
+│   │   │   ├── sunset/                 # Sunset photo upload
+│   │   │   ├── portrait/               # Portrait photo upload
+│   │   │   ├── selfie/                 # Selfie photo upload
+│   │   │   └── complete/[stationId]/   # QR code completion
+│   │   ├── live-quiz/                  # Live quiz (guest view)
 │   │   ├── leaderboard/                # Game leaderboard
 │   │   ├── guest/[code]/               # Guest info (dynamic route)
 │   │   ├── admin-guests/               # Guest admin panel
 │   │   ├── admin-games/                # Games admin panel
+│   │   ├── admin-live-quiz/            # Live quiz control panel
 │   │   └── auth/callback/              # OAuth callback handler
 │   ├── components/
 │   │   ├── providers/                  # React context providers
 │   │   ├── sections/                   # Page sections (Hero, Welcome, etc.)
 │   │   ├── games/                      # Game components
+│   │   ├── live-quiz/                  # Live quiz components
 │   │   └── ui/                         # Reusable UI components (shadcn/ui)
 │   ├── lib/
 │   │   ├── supabase/                   # Supabase client & types
+│   │   ├── live-quiz/                  # Live quiz utilities
 │   │   └── utils/                      # Utility functions
 │   └── hooks/                          # Custom React hooks
 ├── public/                             # Static assets
@@ -109,7 +118,7 @@ wedding/
 │   └── ...
 ├── scripts/                            # SQL migrations and scripts
 │   ├── supabase_games_migration.sql
-│   ├── dev_mode_rls_policies.sql
+│   ├── stress-test-quiz.ts             # Live quiz stress testing
 │   └── ...
 └── data/                               # Data files
     └── wedding_seating_chart.csv
@@ -142,6 +151,13 @@ wedding/
 - Custom animations (wave, float, sparkle)
 - Responsive design (mobile, tablet, desktop)
 - Accessible UI components
+
+### Wedding Games & Live Quiz
+- 5 interactive games for guests (photo uploads, QR completions)
+- Live synchronized quiz during dinner with admin control
+- Real-time leaderboard with Supabase Realtime
+- +200 bonus points for completing all games
+- Stress-tested for 100+ concurrent participants
 
 ---
 
@@ -273,4 +289,4 @@ Private - All Rights Reserved
 
 ---
 
-**Last Updated**: January 17, 2025
+**Last Updated**: January 17, 2026
