@@ -286,7 +286,7 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
             Win amazing prizes!
           </p>
 
-          {quizUnlocked ? (
+          {quizSessionActive ? (
             <div className="mb-6">
               <p className="text-deep-blue/70 mb-2">
                 The quiz is now open! Test your knowledge about David & Chanika.
@@ -324,12 +324,12 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
 
           {devMode && !quizSessionActive && (
             <p className="text-orange-600 text-sm mb-4">
-              Dev Mode: Quiz unlocked for testing
+              Dev Mode: Button enabled for testing
             </p>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            {quizUnlocked ? (
+          <div className="flex justify-center">
+            {quizSessionActive ? (
               <Button
                 onClick={handleQuizClick}
                 size="lg"
@@ -337,6 +337,15 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
               >
                 <Trophy className="w-5 h-5 mr-2" />
                 Join the Quiz
+              </Button>
+            ) : devMode ? (
+              <Button
+                onClick={handleQuizClick}
+                size="lg"
+                className="px-8 py-6 text-lg font-semibold bg-orange-400 hover:bg-orange-500 text-white"
+              >
+                <Trophy className="w-5 h-5 mr-2" />
+                Join Quiz (Dev)
               </Button>
             ) : (
               <Button
@@ -348,15 +357,6 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
                 Available at Dinner
               </Button>
             )}
-            <Button
-              onClick={handleLeaderboardClick}
-              variant="outline"
-              size="lg"
-              className="px-8 py-6 text-lg font-semibold border-ocean-blue text-ocean-blue hover:bg-ocean-blue hover:text-white"
-            >
-              View Leaderboard
-            </Button>
-          </div>
         </div>
       </div>
     </div>
