@@ -287,44 +287,26 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
           </p>
 
           {quizSessionActive ? (
-            <div className="mb-6">
-              <p className="text-deep-blue/70 mb-2">
-                The quiz is now open! Test your knowledge about David & Chanika.
-              </p>
+            <p className="text-deep-blue/70 mb-6">
+              The quiz is live! Join now to win prizes.
               {allActiveComplete && (
-                <p className="text-green-600 text-sm font-medium">
-                  +200 bonus points for completing all games!
-                </p>
+                <span className="block text-green-600 text-sm font-medium mt-1">
+                  +200 bonus points earned!
+                </span>
               )}
-            </div>
+            </p>
           ) : (
-            <div className="mb-6">
-              <div className="bg-gray-100 border border-gray-300 rounded-lg p-4 mb-4">
-                <p className="text-gray-600 font-medium">
-                  Available during dinner time
-                </p>
-                <p className="text-gray-500 text-sm mt-1">
-                  The host will announce when the quiz begins
-                </p>
-              </div>
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
-                <p className="text-amber-800">
-                  <strong>Tip:</strong> Complete all {activeStations.length} games to earn
-                  <span className="font-bold"> +200 bonus points</span> for the quiz!
-                </p>
-                <p className="text-amber-700 mt-1">
-                  {allActiveComplete
-                    ? "You've completed all games - bonus secured!"
-                    : `${completedCount}/${activeStations.length} games completed`
-                  }
-                </p>
-              </div>
-            </div>
-          )}
-
-          {devMode && !quizSessionActive && (
-            <p className="text-orange-600 text-sm mb-4">
-              Dev Mode: Button enabled for testing
+            <p className="text-deep-blue/60 mb-6">
+              Starts during dinner
+              {allActiveComplete ? (
+                <span className="block text-green-600 text-sm font-medium mt-2">
+                  +200 bonus points ready!
+                </span>
+              ) : (
+                <span className="block text-deep-blue/40 text-sm mt-2">
+                  Complete all games for +200 bonus points
+                </span>
+              )}
             </p>
           )}
 
@@ -333,28 +315,27 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
               <Button
                 onClick={handleQuizClick}
                 size="lg"
-                className="px-8 py-6 text-lg font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                className="px-8 py-6 text-lg font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg"
               >
                 <Trophy className="w-5 h-5 mr-2" />
-                Join the Quiz
+                Join Quiz
               </Button>
             ) : devMode ? (
               <Button
                 onClick={handleQuizClick}
                 size="lg"
-                className="px-8 py-6 text-lg font-semibold bg-orange-400 hover:bg-orange-500 text-white"
+                className="px-6 py-5 text-base font-medium bg-orange-400 hover:bg-orange-500 text-white"
               >
-                <Trophy className="w-5 h-5 mr-2" />
                 Join Quiz (Dev)
               </Button>
             ) : (
               <Button
                 disabled
                 size="lg"
-                className="px-8 py-6 text-lg font-semibold bg-gray-200 text-gray-400 cursor-not-allowed border-2 border-gray-300"
+                className="px-6 py-5 text-base font-medium bg-gray-100 text-gray-400 cursor-not-allowed"
               >
-                <Lock className="w-5 h-5 mr-2" />
-                Available at Dinner
+                <Lock className="w-4 h-4 mr-2" />
+                Coming Soon
               </Button>
             )}
           </div>
