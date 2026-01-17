@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Loader2, Trophy, Lock } from 'lucide-react'
@@ -220,6 +221,16 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
   return (
     <div className="min-h-screen py-8 px-4" style={{ backgroundColor: '#fcf6eb' }}>
       <div className="max-w-5xl mx-auto">
+        {/* Back Link */}
+        <div className="mb-4">
+          <Link
+            href="/big-day"
+            className="text-ocean-blue hover:text-navy-blue text-sm font-medium inline-flex items-center gap-1"
+          >
+            ← Back to The Big Day
+          </Link>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-8">
           <img

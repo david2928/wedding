@@ -56,7 +56,7 @@ const MenuSection: React.FC = () => {
           Today's Menus
         </h2>
         <p className="text-deep-blue/70 mt-2 text-sm">
-          Menus unlock at their scheduled times (Thailand time)
+          Menus unlock at their scheduled times
         </p>
       </div>
 
