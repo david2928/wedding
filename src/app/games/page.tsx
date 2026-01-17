@@ -122,6 +122,7 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
   const [loading, setLoading] = useState(true)
   const [stations, setStations] = useState<GameStation[]>([])
   const [completions, setCompletions] = useState<GameCompletion[]>([])
+  const [quizSessionActive, setQuizSessionActive] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -159,6 +160,16 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
 
         setCompletions(completionsData || [])
       }
+
+      // Check if there's an active quiz session
+      const { data: activeSession } = await supabase
+        .from('live_quiz_sessions')
+        .select('id')
+        .in('status', ['waiting', 'active', 'showing_answer'])
+        .limit(1)
+        .single()
+
+      setQuizSessionActive(!!activeSession)
 
       setLoading(false)
     } catch (err) {
@@ -204,7 +215,7 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
   const completedStations = completions.map(c => c.station_id)
   const completedCount = completedStations.filter(id => id !== 'quiz').length
   const allActiveComplete = activeStations.every(s => completedStations.includes(s.station_id))
-  const quizUnlocked = allActiveComplete || devMode
+  const quizUnlocked = quizSessionActive || devMode
 
   return (
     <div className="min-h-screen py-8 px-4" style={{ backgroundColor: '#fcf6eb' }}>
@@ -220,7 +231,7 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
             Wedding Games
           </h1>
           <p className="text-deep-blue/70">
-            Complete all active games to unlock the final quiz!
+            Complete games to earn bonus points for the Grand Prize Quiz!
           </p>
           {party && (
             <p className="text-sm text-deep-blue/50 mt-2">
@@ -256,32 +267,60 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
             })}
         </div>
 
-        {/* Quiz Button */}
+        {/* Grand Prize Quiz Section */}
         <div className="rounded-2xl shadow-2xl p-8 text-center" style={{ backgroundColor: '#FDFBF7', border: '3px solid #eee0d2' }}>
           <div className="relative w-32 h-32 mx-auto mb-4">
             <Image
               src="/games/quiz-icon.png?v=5"
-              alt="Final Quiz"
+              alt="Grand Prize Quiz"
               fill
               className="object-contain"
               unoptimized
             />
           </div>
 
-          <h2 className="font-dancing text-3xl italic text-ocean-blue mb-4">
-            Final Quiz
+          <h2 className="font-dancing text-3xl italic text-ocean-blue mb-2">
+            The Grand Prize Quiz
           </h2>
-          <p className="text-deep-blue/70 mb-6">
-            {quizUnlocked
-              ? 'Test your knowledge about David & Chanika!'
-              : `Complete ${activeStations.length - completedCount} more ${activeStations.length - completedCount === 1 ? 'game' : 'games'} to unlock the quiz`
-            }
-            {devMode && !allActiveComplete && (
-              <span className="block text-orange-600 text-sm mt-2">
-                Dev Mode: Quiz unlocked for testing
-              </span>
-            )}
+          <p className="text-sm text-deep-blue/50 mb-4">
+            Win amazing prizes!
           </p>
+
+          {quizUnlocked ? (
+            <p className="text-deep-blue/70 mb-6">
+              The quiz is now open! Test your knowledge about David & Chanika.
+              {allActiveComplete && (
+                <span className="block text-green-600 text-sm mt-2 font-medium">
+                  +200 bonus points for completing all games!
+                </span>
+              )}
+            </p>
+          ) : (
+            <div className="mb-6">
+              <p className="text-deep-blue/70 mb-3">
+                The quiz will be announced by the host later this evening.
+              </p>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
+                <p className="text-amber-800">
+                  <strong>Tip:</strong> Complete all {activeStations.length} games to earn
+                  <span className="font-bold"> +200 bonus points</span> for the quiz!
+                </p>
+                <p className="text-amber-700 mt-1">
+                  {allActiveComplete
+                    ? "You've completed all games - bonus secured!"
+                    : `${completedCount}/${activeStations.length} games completed`
+                  }
+                </p>
+              </div>
+            </div>
+          )}
+
+          {devMode && !quizSessionActive && (
+            <p className="text-orange-600 text-sm mb-4">
+              Dev Mode: Quiz unlocked for testing
+            </p>
+          )}
+
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button
               onClick={handleQuizClick}
@@ -289,19 +328,19 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
               size="lg"
               className={`px-8 py-6 text-lg font-semibold ${
                 quizUnlocked
-                  ? 'bg-ocean-blue hover:bg-navy-blue text-white'
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
               {quizUnlocked ? (
                 <>
                   <Trophy className="w-5 h-5 mr-2" />
-                  Take the Quiz
+                  Join the Quiz
                 </>
               ) : (
                 <>
                   <Lock className="w-5 h-5 mr-2" />
-                  Quiz Locked
+                  Coming Soon
                 </>
               )}
             </Button>

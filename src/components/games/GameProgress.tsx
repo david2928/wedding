@@ -29,12 +29,12 @@ const GameProgress: React.FC<GameProgressProps> = ({ completed, total, activeGam
 
       <p className="text-center text-base text-deep-blue/70">
         {allActiveGamesComplete ? (
-          <span className="text-ocean-blue">
-            All games completed. The quiz is now unlocked!
+          <span className="text-green-600 font-medium">
+            All games completed! +200 bonus points for the Grand Prize Quiz!
           </span>
         ) : (
           <span>
-            Complete <strong className="text-ocean-blue">{activeGamesCount - completed} more</strong> {activeGamesCount - completed === 1 ? 'game' : 'games'} to unlock the final quiz
+            Complete <strong className="text-ocean-blue">{activeGamesCount - completed} more</strong> {activeGamesCount - completed === 1 ? 'game' : 'games'} to earn bonus points
           </span>
         )}
       </p>

@@ -327,7 +327,7 @@ export default function SunsetUploadPage() {
             onClick={() => router.push('/games')}
             className="bg-ocean-blue hover:bg-navy-blue"
           >
-            Back to Games Hub
+            Back to Games
           </Button>
         </div>
       </div>

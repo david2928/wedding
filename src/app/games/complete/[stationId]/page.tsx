@@ -338,7 +338,7 @@ export default function CompleteGamePage() {
             onClick={() => router.push('/games')}
             className="bg-ocean-blue hover:bg-navy-blue"
           >
-            Back to Games Hub
+            Back to Games
           </Button>
         </div>
       </div>
@@ -383,7 +383,7 @@ export default function CompleteGamePage() {
             variant="outline"
             className="border-ocean-blue text-ocean-blue hover:bg-ocean-blue hover:text-white"
           >
-            Go to Games Now
+            Back to Games
           </Button>
         </div>
       </div>
