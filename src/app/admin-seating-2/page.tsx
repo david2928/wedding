@@ -31,7 +31,7 @@ interface Party {
 const TABLE_CONFIG = {
   1: { name: 'Table A', seats: 24, seatsPerSide: 12 },
   2: { name: 'Table B', seats: 18, seatsPerSide: 9 },
-  3: { name: 'Table C', seats: 6, seatsPerSide: 3 },
+  3: { name: 'Table C', seats: 12, seatsPerSide: 6 },
   4: { name: 'Table D', seats: 18, seatsPerSide: 9 },
   5: { name: 'Table E', seats: 24, seatsPerSide: 12 },
 };
@@ -271,7 +271,7 @@ export default function AdminSeating2Page() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSide, setFilterSide] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
-  const [tableNames, setTableNames] = useState<Record<number, string>>({
+  const [tableNames] = useState<Record<number, string>>({
     1: 'Table A',
     2: 'Table B',
     3: 'Table C',
@@ -655,7 +655,7 @@ export default function AdminSeating2Page() {
                     <BrideGroomSection />
 
                     {/* 5 Long Tables */}
-                    <div className="flex items-start justify-center gap-6">
+                    <div className="flex items-end justify-center gap-6">
                       {/* Table A (24 seats) */}
                       <LongTable
                         tableNumber={1}
