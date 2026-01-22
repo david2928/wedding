@@ -330,7 +330,7 @@ export function GuestGate({ children, onPartyResolved, pageName = 'this page' }:
                     Setting up...
                   </>
                 ) : (
-                  'Let's Go!'
+                  "{"Let's Go!"}"
                 )}
               </Button>
 
