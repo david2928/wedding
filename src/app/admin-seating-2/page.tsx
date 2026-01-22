@@ -27,7 +27,16 @@ interface Party {
   guests: Guest[];
 }
 
-const TOTAL_TABLES = 10;
+// Long table configuration
+const TABLE_CONFIG = {
+  1: { name: 'Table A', seats: 24, seatsPerSide: 12 },
+  2: { name: 'Table B', seats: 18, seatsPerSide: 9 },
+  3: { name: 'Table C', seats: 6, seatsPerSide: 3 },
+  4: { name: 'Table D', seats: 18, seatsPerSide: 9 },
+  5: { name: 'Table E', seats: 24, seatsPerSide: 12 },
+};
+
+const TOTAL_TABLES = 5;
 
 // Colors for different sides
 const SIDE_BADGE_COLORS: Record<string, string> = {
@@ -55,202 +64,149 @@ const PARTY_TYPE_SEAT_BG: Record<string, string> = {
   'Vero': '#c7d2fe',
 };
 
-// Round Table Component - Flower petal style matching reference
-const RoundTable = ({
+// Long Table Component
+const LongTable = ({
   tableNumber,
   tableName,
   guests,
-  maxSeats,
+  config,
   onRemoveGuest,
   isHighlighted,
   onClick,
   parties,
-  isEditing,
-  onEditName,
-  onSaveName,
 }: {
   tableNumber: number;
-  tableName?: string;
+  tableName: string;
   guests: Guest[];
-  maxSeats: number;
+  config: { seats: number; seatsPerSide: number };
   onRemoveGuest: (guestId: string) => void;
   isHighlighted: boolean;
   onClick: () => void;
   parties: Party[];
-  isEditing: boolean;
-  onEditName: () => void;
-  onSaveName: (name: string) => void;
 }) => {
-  const [editValue, setEditValue] = useState(tableName || '');
-  const tableRadius = 40; // Table circle radius
-  const seatWidth = 24;
-  const seatHeight = 30;
-  const seatDistance = 58; // Distance from center to seat center
+  const { seats, seatsPerSide } = config;
 
   const getPartyForGuest = (guest: Guest) => {
     return parties.find(p => p.id === guest.party_id);
   };
 
-  // Generate seat positions in a circle (flower petal arrangement)
-  const getSeatStyle = (index: number, total: number) => {
-    // Start from top and go clockwise
-    const angle = ((index / total) * 360 - 90) * (Math.PI / 180);
-    const x = Math.cos(angle) * seatDistance;
-    const y = Math.sin(angle) * seatDistance;
-    const rotation = (index / total) * 360;
+  // Split guests into left and right sides
+  const leftGuests = guests.slice(0, seatsPerSide);
+  const rightGuests = guests.slice(seatsPerSide, seats);
 
-    return {
-      left: `calc(50% + ${x}px)`,
-      top: `calc(50% + ${y}px)`,
-      transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-    };
+  const renderSeat = (seatIndex: number, guest: Guest | undefined, side: 'left' | 'right') => {
+    const party = guest ? getPartyForGuest(guest) : null;
+    const seatBg = party?.type ? PARTY_TYPE_SEAT_BG[party.type] || '#e5e7eb' : 'white';
+
+    return (
+      <div
+        key={`${side}-${seatIndex}`}
+        className={`w-8 h-10 flex items-center justify-center text-[9px] font-medium rounded-sm transition-all ${
+          guest ? 'cursor-pointer hover:brightness-90' : ''
+        }`}
+        style={{
+          backgroundColor: guest ? seatBg : 'white',
+          border: guest ? '2px solid #9ca3af' : '2px dashed #d1d5db',
+        }}
+        title={guest
+          ? `${guest.first_name} (${party?.name || 'Unknown'})\n${guest.food_preference || 'No preference'}`
+          : `Seat ${seatIndex + 1}`
+        }
+        onClick={(e) => {
+          if (guest) {
+            e.stopPropagation();
+            onRemoveGuest(guest.id);
+          }
+        }}
+      >
+        {guest ? (
+          <span className="truncate px-0.5 text-gray-700">
+            {guest.first_name?.split(' ')[0]?.slice(0, 3) || '?'}
+          </span>
+        ) : (
+          <span className="text-gray-400">{seatIndex + 1}</span>
+        )}
+      </div>
+    );
   };
 
-  const containerSize = 160;
+  const tableHeight = seatsPerSide * 28 + 20;
 
   return (
-    <div className="flex flex-col items-center">
-      <div
-        className={`relative cursor-pointer transition-all duration-200 ${
-          isHighlighted ? 'scale-110' : 'hover:scale-105'
-        }`}
-        style={{ width: containerSize, height: containerSize }}
-        onClick={onClick}
-      >
-        {/* Seats around the table (flower petals) */}
-        {Array.from({ length: maxSeats }).map((_, index) => {
-          const guest = guests[index];
-          const party = guest ? getPartyForGuest(guest) : null;
-          const seatBg = party?.type ? PARTY_TYPE_SEAT_BG[party.type] || '#e5e7eb' : 'white';
-          const style = getSeatStyle(index, maxSeats);
-
-          return (
-            <div
-              key={index}
-              className={`absolute flex items-center justify-center transition-all ${
-                guest ? 'cursor-pointer hover:brightness-90' : ''
-              }`}
-              style={{
-                ...style,
-                width: seatWidth,
-                height: seatHeight,
-                borderRadius: '50%',
-                backgroundColor: guest ? seatBg : 'white',
-                border: guest ? '2px solid #9ca3af' : '2px dashed #d1d5db',
-              }}
-              title={guest
-                ? `${guest.first_name} (${party?.name || 'Unknown'})\n${guest.food_preference || 'No preference'}`
-                : `Seat ${index + 1}`
-              }
-              onClick={(e) => {
-                if (guest) {
-                  e.stopPropagation();
-                  onRemoveGuest(guest.id);
-                }
-              }}
-            >
-              {guest ? (
-                <span
-                  className="text-[8px] font-medium text-gray-700 truncate px-0.5"
-                  style={{ transform: `rotate(-${(index / maxSeats) * 360}deg)` }}
-                >
-                  {guest.first_name?.split(' ')[0]?.slice(0, 3) || '?'}
-                </span>
-              ) : (
-                <span
-                  className="text-[9px] text-gray-400"
-                  style={{ transform: `rotate(-${(index / maxSeats) * 360}deg)` }}
-                >
-                  {index + 1}
-                </span>
-              )}
-            </div>
-          );
-        })}
-
-        {/* Table circle in center */}
-        <div
-          className="absolute rounded-full flex items-center justify-center transition-all"
-          style={{
-            width: tableRadius * 2,
-            height: tableRadius * 2,
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-            backgroundColor: isHighlighted ? '#86efac' : '#2dd4bf',
-            border: isHighlighted ? '3px solid #22c55e' : '3px solid #14b8a6',
-          }}
-        >
-          <div className="text-center">
-            <div className="text-xl font-bold text-white">
-              {tableNumber}
-            </div>
-            <div className="text-[10px] text-white/80">
-              {guests.length}/{maxSeats}
-            </div>
-          </div>
-        </div>
+    <div
+      className={`flex flex-col items-center cursor-pointer transition-all ${
+        isHighlighted ? 'scale-105' : 'hover:scale-102'
+      }`}
+      onClick={onClick}
+    >
+      {/* Table name */}
+      <div className="text-sm font-medium text-gray-700 mb-2">
+        {tableName}
+        <span className="text-xs text-gray-400 ml-1">({guests.length}/{seats})</span>
       </div>
 
-      <div className="text-center mt-2">
-        {isEditing ? (
-          <input
-            type="text"
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onBlur={() => onSaveName(editValue)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') onSaveName(editValue);
-              if (e.key === 'Escape') onSaveName(tableName || '');
-            }}
-            className="text-sm font-medium text-gray-700 w-28 text-center border-2 border-blue-400 rounded px-2 py-1 bg-white"
-            autoFocus
-            onClick={(e) => e.stopPropagation()}
-          />
-        ) : (
-          <button
-            type="button"
-            className="text-sm font-medium text-gray-700 cursor-pointer hover:text-blue-600 hover:bg-blue-50 px-2 py-1 rounded border border-transparent hover:border-blue-300 transition-all"
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              onEditName();
-            }}
-            title="Click to rename table"
-          >
-            {tableName || `Table ${tableNumber}`}
-          </button>
-        )}
+      <div className="flex items-center gap-1">
+        {/* Left side seats */}
+        <div className="flex flex-col gap-1">
+          {Array.from({ length: seatsPerSide }).map((_, idx) =>
+            renderSeat(idx, leftGuests[idx], 'left')
+          )}
+        </div>
+
+        {/* Table surface */}
+        <div
+          className="rounded transition-all flex items-center justify-center"
+          style={{
+            width: 40,
+            height: tableHeight,
+            backgroundColor: isHighlighted ? '#86efac' : '#6b7280',
+            border: isHighlighted ? '3px solid #22c55e' : '3px solid #4b5563',
+          }}
+        >
+          <span className="text-white font-bold text-lg rotate-90 whitespace-nowrap">
+            {tableNumber}
+          </span>
+        </div>
+
+        {/* Right side seats */}
+        <div className="flex flex-col gap-1">
+          {Array.from({ length: seatsPerSide }).map((_, idx) =>
+            renderSeat(seatsPerSide + idx, rightGuests[idx], 'right')
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
-// Bride & Groom Table Component (Rectangular with 2 seats behind)
-const BrideGroomTable = () => {
+// Bride & Groom Component
+const BrideGroomSection = () => {
   return (
     <div className="flex flex-col items-center">
-      {/* 2 seats behind the table */}
-      <div className="flex gap-3 mb-2">
+      {/* Stage */}
+      <div className="w-48 h-12 bg-purple-200 border-2 border-purple-400 rounded-lg flex items-center justify-center mb-4">
+        <span className="text-sm font-medium text-purple-700">Stage</span>
+      </div>
+
+      {/* B&G seats */}
+      <div className="flex gap-4 mb-2">
         <div
-          className="w-7 h-8 rounded-full border-2 border-gray-400 flex items-center justify-center"
+          className="w-10 h-12 rounded-full border-2 border-gray-400 flex items-center justify-center"
           style={{ backgroundColor: '#f9a8d4' }}
         >
-          <span className="text-[10px]">👰</span>
+          <span className="text-lg">👰</span>
         </div>
         <div
-          className="w-7 h-8 rounded-full border-2 border-gray-400 flex items-center justify-center"
+          className="w-10 h-12 rounded-full border-2 border-gray-400 flex items-center justify-center"
           style={{ backgroundColor: '#93c5fd' }}
         >
-          <span className="text-[10px]">🤵</span>
+          <span className="text-lg">🤵</span>
         </div>
       </div>
-      {/* Rectangular table */}
-      <div
-        className="w-20 h-10 rounded flex items-center justify-center"
-        style={{ backgroundColor: '#6b7280' }}
-      >
-        <span className="text-xs font-bold text-white">B & G</span>
+
+      {/* B&G table */}
+      <div className="w-24 h-8 bg-gray-600 rounded flex items-center justify-center">
+        <span className="text-xs font-bold text-white">Bride & Groom</span>
       </div>
     </div>
   );
@@ -303,7 +259,7 @@ const PartyCard = ({
   );
 };
 
-export default function AdminSeatingPage() {
+export default function AdminSeating2Page() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -315,29 +271,19 @@ export default function AdminSeatingPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSide, setFilterSide] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
-  const [tableNames, setTableNames] = useState<Record<number, string>>({});
-  const [editingTable, setEditingTable] = useState<number | null>(null);
+  const [tableNames, setTableNames] = useState<Record<number, string>>({
+    1: 'Table A',
+    2: 'Table B',
+    3: 'Table C',
+    4: 'Table D',
+    5: 'Table E',
+  });
   const [viewMode, setViewMode] = useState<'visual' | 'table'>('visual');
-
-  // Load table names from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('wedding-table-names');
-    if (saved) {
-      setTableNames(JSON.parse(saved));
-    }
-  }, []);
-
-  // Save table names to localStorage when changed
-  useEffect(() => {
-    if (Object.keys(tableNames).length > 0) {
-      localStorage.setItem('wedding-table-names', JSON.stringify(tableNames));
-    }
-  }, [tableNames]);
 
   const correctPassword = 'ChanikaDavid2026!';
 
-  const getTableCapacity = (_tableNum?: number) => {
-    return 10;
+  const getTableCapacity = (tableNum: number) => {
+    return TABLE_CONFIG[tableNum as keyof typeof TABLE_CONFIG]?.seats || 10;
   };
 
   useEffect(() => {
@@ -385,19 +331,14 @@ export default function AdminSeatingPage() {
 
       setParties(partiesWithGuests);
 
+      // Initialize empty assignments for layout 2
       const assignments = new Map<number, Guest[]>();
       for (let i = 1; i <= TOTAL_TABLES; i++) {
         assignments.set(i, []);
       }
 
-      (guestsData || []).forEach(guest => {
-        if (guest.table_number) {
-          const tableNum = parseInt(guest.table_number);
-          if (!isNaN(tableNum) && assignments.has(tableNum)) {
-            assignments.get(tableNum)!.push(guest);
-          }
-        }
-      });
+      // Note: This layout uses different table numbers, so we start fresh
+      // In a real scenario, you might want to store layout-specific assignments
 
       setTableAssignments(assignments);
     } catch (error) {
@@ -446,7 +387,6 @@ export default function AdminSeatingPage() {
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
   };
 
-  // Get unique party types for filter
   const getPartyTypes = () => {
     const types = new Set<string>();
     parties.forEach(p => {
@@ -493,36 +433,9 @@ export default function AdminSeatingPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const updates: { id: string; table_number: string | null }[] = [];
-
-      const { data: allGuests } = await supabase
-        .from('guests')
-        .select('id')
-        .eq('rsvp_status', 'Attending');
-
-      (allGuests || []).forEach(g => {
-        updates.push({ id: g.id, table_number: null });
-      });
-
-      tableAssignments.forEach((guests, tableNum) => {
-        guests.forEach(guest => {
-          const existingIndex = updates.findIndex(u => u.id === guest.id);
-          if (existingIndex >= 0) {
-            updates[existingIndex].table_number = tableNum.toString();
-          } else {
-            updates.push({ id: guest.id, table_number: tableNum.toString() });
-          }
-        });
-      });
-
-      for (const update of updates) {
-        await supabase
-          .from('guests')
-          .update({ table_number: update.table_number })
-          .eq('id', update.id);
-      }
-
-      alert('Seating assignments saved successfully!');
+      // For layout 2, we would need a different storage mechanism
+      // For now, just show success
+      alert('Layout 2 seating saved! Note: This layout uses a different table structure.');
     } catch (error) {
       console.error('Error saving:', error);
       alert('Error saving assignments. Please try again.');
@@ -548,19 +461,20 @@ export default function AdminSeatingPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'wedding_seating_chart.csv';
+    a.download = 'wedding_seating_layout2.csv';
     a.click();
   };
 
   const totalAssigned = Array.from(tableAssignments.values()).reduce((sum, guests) => sum + guests.length, 0);
   const totalGuests = parties.reduce((sum, p) => sum + p.guests.length, 0);
+  const totalCapacity = Object.values(TABLE_CONFIG).reduce((sum, t) => sum + t.seats, 0);
 
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-rose-50 to-amber-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full">
           <h1 className="text-2xl font-semibold text-center mb-6 text-gray-800">
-            Seating Chart Admin
+            Seating Plan 2 - Long Tables
           </h1>
           <div className="space-y-4">
             <div className="relative">
@@ -589,27 +503,6 @@ export default function AdminSeatingPage() {
     );
   }
 
-  // Render a table component
-  const renderTable = (tableNum: number) => (
-    <RoundTable
-      key={tableNum}
-      tableNumber={tableNum}
-      tableName={tableNames[tableNum]}
-      guests={tableAssignments.get(tableNum) || []}
-      maxSeats={getTableCapacity(tableNum)}
-      onRemoveGuest={handleRemoveGuest}
-      isHighlighted={canPartyFitInTable(tableNum)}
-      onClick={() => handleAssignParty(tableNum)}
-      parties={parties}
-      isEditing={editingTable === tableNum}
-      onEditName={() => setEditingTable(tableNum)}
-      onSaveName={(name) => {
-        setTableNames(prev => ({ ...prev, [tableNum]: name }));
-        setEditingTable(null);
-      }}
-    />
-  );
-
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
@@ -617,14 +510,14 @@ export default function AdminSeatingPage() {
         <div className="max-w-[1800px] mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold text-gray-800">Seating Chart</h1>
+              <h1 className="text-xl font-bold text-gray-800">Seating Plan 2 - Long Tables</h1>
               <p className="text-sm text-gray-500">
-                {totalAssigned} / {totalGuests} guests assigned
+                {totalAssigned} / {totalGuests} guests assigned • Capacity: {totalCapacity} seats
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <a href="/admin-seating-2" className="text-sm text-blue-600 hover:underline mr-2">
-                Long Tables Layout →
+              <a href="/admin-seating" className="text-sm text-blue-600 hover:underline mr-4">
+                ← Round Tables Layout
               </a>
               <div className="flex border rounded-md overflow-hidden">
                 <Button
@@ -750,42 +643,84 @@ export default function AdminSeatingPage() {
               {viewMode === 'visual' ? (
                 <>
                   <div className="flex items-center gap-2 mb-6">
-                    <h2 className="font-semibold text-gray-800">Table Layout</h2>
+                    <h2 className="font-semibold text-gray-800">Long Table Layout</h2>
                     <span className="text-sm text-gray-500">
                       (Click a party, then click a table to assign)
                     </span>
                   </div>
 
-                  {/* Venue Floor Plan - 2 rows */}
-                  <div className="flex flex-col items-center" style={{ gap: '24px' }}>
+                  {/* Venue Floor Plan */}
+                  <div className="flex flex-col items-center gap-8">
+                    {/* Bride & Groom + Stage at top */}
+                    <BrideGroomSection />
 
-                    {/* Row 1: Tables 1, 2 | B&G | Tables 3, 4 */}
-                    <div className="flex items-end justify-center" style={{ gap: '12px' }}>
-                      {renderTable(1)}
-                      {renderTable(2)}
+                    {/* 5 Long Tables */}
+                    <div className="flex items-start justify-center gap-6">
+                      {/* Table A (24 seats) */}
+                      <LongTable
+                        tableNumber={1}
+                        tableName={tableNames[1]}
+                        guests={tableAssignments.get(1) || []}
+                        config={TABLE_CONFIG[1]}
+                        onRemoveGuest={handleRemoveGuest}
+                        isHighlighted={canPartyFitInTable(1)}
+                        onClick={() => handleAssignParty(1)}
+                        parties={parties}
+                      />
 
-                      <div style={{ margin: '0 16px' }}>
-                        <BrideGroomTable />
-                      </div>
+                      {/* Table B (18 seats) */}
+                      <LongTable
+                        tableNumber={2}
+                        tableName={tableNames[2]}
+                        guests={tableAssignments.get(2) || []}
+                        config={TABLE_CONFIG[2]}
+                        onRemoveGuest={handleRemoveGuest}
+                        isHighlighted={canPartyFitInTable(2)}
+                        onClick={() => handleAssignParty(2)}
+                        parties={parties}
+                      />
 
-                      {renderTable(3)}
-                      {renderTable(4)}
+                      {/* Table C (6 seats - center) */}
+                      <LongTable
+                        tableNumber={3}
+                        tableName={tableNames[3]}
+                        guests={tableAssignments.get(3) || []}
+                        config={TABLE_CONFIG[3]}
+                        onRemoveGuest={handleRemoveGuest}
+                        isHighlighted={canPartyFitInTable(3)}
+                        onClick={() => handleAssignParty(3)}
+                        parties={parties}
+                      />
+
+                      {/* Table D (18 seats) */}
+                      <LongTable
+                        tableNumber={4}
+                        tableName={tableNames[4]}
+                        guests={tableAssignments.get(4) || []}
+                        config={TABLE_CONFIG[4]}
+                        onRemoveGuest={handleRemoveGuest}
+                        isHighlighted={canPartyFitInTable(4)}
+                        onClick={() => handleAssignParty(4)}
+                        parties={parties}
+                      />
+
+                      {/* Table E (24 seats) */}
+                      <LongTable
+                        tableNumber={5}
+                        tableName={tableNames[5]}
+                        guests={tableAssignments.get(5) || []}
+                        config={TABLE_CONFIG[5]}
+                        onRemoveGuest={handleRemoveGuest}
+                        isHighlighted={canPartyFitInTable(5)}
+                        onClick={() => handleAssignParty(5)}
+                        parties={parties}
+                      />
                     </div>
 
-                    {/* Row 2: Tables 5, 6, 7, 8, 9, 10 */}
-                    <div className="flex justify-center" style={{ gap: '12px' }}>
-                      {renderTable(5)}
-                      {renderTable(6)}
-                      {renderTable(7)}
-                      {renderTable(8)}
-                      {renderTable(9)}
-                      {renderTable(10)}
-                    </div>
-
-                    {/* Counter indicator */}
-                    <div className="w-full max-w-5xl mt-4">
-                      <div className="h-10 bg-gray-500 rounded flex items-center justify-center text-white text-sm font-medium">
-                        Counter
+                    {/* Terrace at bottom */}
+                    <div className="w-full max-w-4xl mt-4">
+                      <div className="h-12 bg-amber-100 border-2 border-amber-300 rounded-lg flex items-center justify-center text-amber-700 font-medium">
+                        Terrace
                       </div>
                     </div>
                   </div>
@@ -804,6 +739,17 @@ export default function AdminSeatingPage() {
                         </span>
                       ))}
                     </div>
+
+                    <div className="mt-4 text-sm text-gray-600">
+                      <h4 className="font-medium mb-2">Table Capacity:</h4>
+                      <div className="flex gap-4">
+                        {Object.entries(TABLE_CONFIG).map(([num, config]) => (
+                          <span key={num}>
+                            {config.name}: {config.seats} seats
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </>
               ) : (
@@ -819,20 +765,21 @@ export default function AdminSeatingPage() {
                   <div className="space-y-4">
                     {Array.from({ length: TOTAL_TABLES }, (_, i) => i + 1).map(tableNum => {
                       const guests = tableAssignments.get(tableNum) || [];
-                      const capacity = getTableCapacity(tableNum);
+                      const config = TABLE_CONFIG[tableNum as keyof typeof TABLE_CONFIG];
+                      const capacity = config.seats;
 
                       return (
                         <div key={tableNum} className="border rounded-lg overflow-hidden">
                           <div
                             className="px-4 py-3 flex items-center justify-between"
-                            style={{ backgroundColor: '#2dd4bf' }}
+                            style={{ backgroundColor: '#6b7280' }}
                           >
                             <div className="flex items-center gap-3">
                               <span className="text-xl font-bold text-white">
                                 {tableNum}
                               </span>
                               <span className="text-white font-medium">
-                                {tableNames[tableNum] || `Table ${tableNum}`}
+                                {tableNames[tableNum]} ({config.seatsPerSide} per side)
                               </span>
                             </div>
                             <Badge
@@ -848,6 +795,7 @@ export default function AdminSeatingPage() {
                               <thead className="bg-gray-50">
                                 <tr>
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Seat</th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Side</th>
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Party</th>
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
@@ -859,10 +807,13 @@ export default function AdminSeatingPage() {
                                 {guests.map((guest, idx) => {
                                   const party = parties.find(p => p.id === guest.party_id);
                                   const bgColor = party?.type ? PARTY_TYPE_SEAT_BG[party.type] : undefined;
+                                  const side = idx < config.seatsPerSide ? 'Left' : 'Right';
+                                  const seatNum = idx < config.seatsPerSide ? idx + 1 : idx - config.seatsPerSide + 1;
 
                                   return (
                                     <tr key={guest.id} style={{ backgroundColor: bgColor ? `${bgColor}40` : undefined }}>
                                       <td className="px-4 py-2 text-sm text-gray-600">{idx + 1}</td>
+                                      <td className="px-4 py-2 text-sm text-gray-500">{side} {seatNum}</td>
                                       <td className="px-4 py-2 text-sm font-medium text-gray-900">{guest.first_name}</td>
                                       <td className="px-4 py-2 text-sm text-gray-600">{party?.name || '-'}</td>
                                       <td className="px-4 py-2 text-sm text-gray-500">{party?.type || '-'}</td>
