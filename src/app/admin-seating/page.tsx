@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Eye, EyeOff, Save, Users, Download } from 'lucide-react';
+import { Eye, EyeOff, Save, Users, Download, LayoutGrid, List } from 'lucide-react';
 
 interface Guest {
   id: string;
@@ -317,6 +317,7 @@ export default function AdminSeatingPage() {
   const [filterType, setFilterType] = useState<string>('all');
   const [tableNames, setTableNames] = useState<Record<number, string>>({});
   const [editingTable, setEditingTable] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<'visual' | 'table'>('visual');
 
   // Load table names from localStorage
   useEffect(() => {
@@ -622,6 +623,24 @@ export default function AdminSeatingPage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <div className="flex border rounded-md overflow-hidden">
+                <Button
+                  variant={viewMode === 'visual' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('visual')}
+                  className="rounded-none"
+                >
+                  <LayoutGrid size={16} className="mr-1" /> Visual
+                </Button>
+                <Button
+                  variant={viewMode === 'table' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('table')}
+                  className="rounded-none"
+                >
+                  <List size={16} className="mr-1" /> Table
+                </Button>
+              </div>
               <Button variant="outline" size="sm" onClick={handleExportCSV}>
                 <Download size={16} className="mr-1" /> Export CSV
               </Button>
@@ -725,62 +744,148 @@ export default function AdminSeatingPage() {
           {/* Right Panel - Table Layout */}
           <div className="flex-1">
             <div className="bg-white rounded-xl shadow p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <h2 className="font-semibold text-gray-800">Table Layout</h2>
-                <span className="text-sm text-gray-500">
-                  (Click a party, then click a table to assign)
-                </span>
-              </div>
-
-              {/* Venue Floor Plan - 2 rows */}
-              <div className="flex flex-col items-center" style={{ gap: '24px' }}>
-
-                {/* Row 1: Tables 1, 2 | B&G | Tables 3, 4 */}
-                <div className="flex items-end justify-center" style={{ gap: '12px' }}>
-                  {renderTable(1)}
-                  {renderTable(2)}
-
-                  <div style={{ margin: '0 16px' }}>
-                    <BrideGroomTable />
-                  </div>
-
-                  {renderTable(3)}
-                  {renderTable(4)}
-                </div>
-
-                {/* Row 2: Tables 5, 6, 7, 8, 9, 10 */}
-                <div className="flex justify-center" style={{ gap: '12px' }}>
-                  {renderTable(5)}
-                  {renderTable(6)}
-                  {renderTable(7)}
-                  {renderTable(8)}
-                  {renderTable(9)}
-                  {renderTable(10)}
-                </div>
-
-                {/* Counter indicator */}
-                <div className="w-full max-w-5xl mt-4">
-                  <div className="h-10 bg-gray-500 rounded flex items-center justify-center text-white text-sm font-medium">
-                    Counter
-                  </div>
-                </div>
-              </div>
-
-              {/* Legend */}
-              <div className="mt-8 pt-6 border-t">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Party Type Colors</h3>
-                <div className="flex flex-wrap gap-2">
-                  {Object.entries(PARTY_TYPE_SEAT_BG).map(([type, color]) => (
-                    <span
-                      key={type}
-                      className="text-xs px-2 py-1 rounded border border-gray-300"
-                      style={{ backgroundColor: color }}
-                    >
-                      {type}
+              {viewMode === 'visual' ? (
+                <>
+                  <div className="flex items-center gap-2 mb-6">
+                    <h2 className="font-semibold text-gray-800">Table Layout</h2>
+                    <span className="text-sm text-gray-500">
+                      (Click a party, then click a table to assign)
                     </span>
-                  ))}
-                </div>
-              </div>
+                  </div>
+
+                  {/* Venue Floor Plan - 2 rows */}
+                  <div className="flex flex-col items-center" style={{ gap: '24px' }}>
+
+                    {/* Row 1: Tables 1, 2 | B&G | Tables 3, 4 */}
+                    <div className="flex items-end justify-center" style={{ gap: '12px' }}>
+                      {renderTable(1)}
+                      {renderTable(2)}
+
+                      <div style={{ margin: '0 16px' }}>
+                        <BrideGroomTable />
+                      </div>
+
+                      {renderTable(3)}
+                      {renderTable(4)}
+                    </div>
+
+                    {/* Row 2: Tables 5, 6, 7, 8, 9, 10 */}
+                    <div className="flex justify-center" style={{ gap: '12px' }}>
+                      {renderTable(5)}
+                      {renderTable(6)}
+                      {renderTable(7)}
+                      {renderTable(8)}
+                      {renderTable(9)}
+                      {renderTable(10)}
+                    </div>
+
+                    {/* Counter indicator */}
+                    <div className="w-full max-w-5xl mt-4">
+                      <div className="h-10 bg-gray-500 rounded flex items-center justify-center text-white text-sm font-medium">
+                        Counter
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="mt-8 pt-6 border-t">
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">Party Type Colors</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(PARTY_TYPE_SEAT_BG).map(([type, color]) => (
+                        <span
+                          key={type}
+                          className="text-xs px-2 py-1 rounded border border-gray-300"
+                          style={{ backgroundColor: color }}
+                        >
+                          {type}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-6">
+                    <h2 className="font-semibold text-gray-800">Table Overview</h2>
+                    <span className="text-sm text-gray-500">
+                      All tables and assigned guests
+                    </span>
+                  </div>
+
+                  {/* Tabular View */}
+                  <div className="space-y-4">
+                    {Array.from({ length: TOTAL_TABLES }, (_, i) => i + 1).map(tableNum => {
+                      const guests = tableAssignments.get(tableNum) || [];
+                      const capacity = getTableCapacity(tableNum);
+
+                      return (
+                        <div key={tableNum} className="border rounded-lg overflow-hidden">
+                          <div
+                            className="px-4 py-3 flex items-center justify-between"
+                            style={{ backgroundColor: '#2dd4bf' }}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-xl font-bold text-white">
+                                {tableNum}
+                              </span>
+                              <span className="text-white font-medium">
+                                {tableNames[tableNum] || `Table ${tableNum}`}
+                              </span>
+                            </div>
+                            <Badge
+                              variant="secondary"
+                              className={`${guests.length === capacity ? 'bg-green-100 text-green-700' : 'bg-white text-gray-700'}`}
+                            >
+                              {guests.length}/{capacity} seats
+                            </Badge>
+                          </div>
+
+                          {guests.length > 0 ? (
+                            <table className="w-full">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Seat</th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Party</th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Main Course</th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Dietary</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100">
+                                {guests.map((guest, idx) => {
+                                  const party = parties.find(p => p.id === guest.party_id);
+                                  const bgColor = party?.type ? PARTY_TYPE_SEAT_BG[party.type] : undefined;
+
+                                  return (
+                                    <tr key={guest.id} style={{ backgroundColor: bgColor ? `${bgColor}40` : undefined }}>
+                                      <td className="px-4 py-2 text-sm text-gray-600">{idx + 1}</td>
+                                      <td className="px-4 py-2 text-sm font-medium text-gray-900">{guest.first_name}</td>
+                                      <td className="px-4 py-2 text-sm text-gray-600">{party?.name || '-'}</td>
+                                      <td className="px-4 py-2 text-sm text-gray-500">{party?.type || '-'}</td>
+                                      <td className="px-4 py-2 text-sm text-gray-600">
+                                        {guest.food_preference?.replace('Italian Set - ', '') ||
+                                         (guest.age_group === 'Toddler' ? 'Kids Meal' : '-')}
+                                      </td>
+                                      <td className="px-4 py-2 text-sm text-gray-500">
+                                        {guest.dietary_requirements || '-'}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          ) : (
+                            <div className="px-4 py-6 text-center text-gray-400 text-sm">
+                              No guests assigned yet
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
