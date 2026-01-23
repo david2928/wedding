@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Loader2, AlertCircle, UserPlus } from 'lucide-react'
+import { Loader2, AlertCircle, UserPlus, LogOut, User as UserIcon } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import type { Tables } from '@/lib/supabase/types'
 
@@ -162,6 +162,13 @@ export function GuestGate({ children, onPartyResolved, pageName = 'this page' }:
 
   const handleTryDifferentAccount = async () => {
     await supabase.auth.signOut()
+    setStatus('not-authenticated')
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    setUser(null)
+    setParty(null)
     setStatus('not-authenticated')
   }
 
@@ -349,6 +356,35 @@ export function GuestGate({ children, onPartyResolved, pageName = 'this page' }:
     )
   }
 
-  // Authenticated - render children
-  return <>{children}</>
+  // Authenticated - render children with user info bar
+  return (
+    <>
+      {/* User Info Bar */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+        <div className="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-deep-blue/80">
+            <UserIcon className="w-4 h-4" />
+            <span className="font-medium">{party?.name || user?.email}</span>
+            {party?.type === 'walk-in' && (
+              <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                Guest
+              </span>
+            )}
+          </div>
+          <Button
+            onClick={handleLogout}
+            variant="ghost"
+            size="sm"
+            className="text-deep-blue/60 hover:text-deep-blue hover:bg-gray-100"
+          >
+            <LogOut className="w-4 h-4 mr-1" />
+            Logout
+          </Button>
+        </div>
+      </div>
+      {/* Spacer to prevent content from being hidden behind fixed bar */}
+      <div className="h-12" />
+      {children}
+    </>
+  )
 }
