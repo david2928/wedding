@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Eye, EyeOff, Save, Users, Download, LayoutGrid, List } from 'lucide-react';
+import { Eye, EyeOff, Save, Users, Download, LayoutGrid, List, User } from 'lucide-react';
 
 interface Guest {
   id: string;
@@ -64,24 +64,24 @@ const PARTY_TYPE_SEAT_BG: Record<string, string> = {
   'Vero': '#c7d2fe',
 };
 
-// Long Table Component
+// Long Table Component with individual seat assignment
 const LongTable = ({
   tableNumber,
   tableName,
-  guests,
+  seatAssignments,
   config,
+  onSeatClick,
   onRemoveGuest,
-  isHighlighted,
-  onClick,
+  selectedGuest,
   parties,
 }: {
   tableNumber: number;
   tableName: string;
-  guests: Guest[];
+  seatAssignments: (Guest | null)[];
   config: { seats: number; seatsPerSide: number };
-  onRemoveGuest: (guestId: string) => void;
-  isHighlighted: boolean;
-  onClick: () => void;
+  onSeatClick: (tableNum: number, seatIndex: number) => void;
+  onRemoveGuest: (tableNum: number, seatIndex: number) => void;
+  selectedGuest: Guest | null;
   parties: Party[];
 }) => {
   const { seats, seatsPerSide } = config;
@@ -90,32 +90,37 @@ const LongTable = ({
     return parties.find(p => p.id === guest.party_id);
   };
 
-  // Split guests into left and right sides
-  const leftGuests = guests.slice(0, seatsPerSide);
-  const rightGuests = guests.slice(seatsPerSide, seats);
+  const assignedCount = seatAssignments.filter(s => s !== null).length;
 
-  const renderSeat = (seatIndex: number, guest: Guest | undefined, side: 'left' | 'right') => {
+  const renderSeat = (seatIndex: number, side: 'left' | 'right', sideIndex: number) => {
+    const guest = seatAssignments[seatIndex];
     const party = guest ? getPartyForGuest(guest) : null;
     const seatBg = party?.type ? PARTY_TYPE_SEAT_BG[party.type] || '#e5e7eb' : 'white';
+    const isHighlighted = selectedGuest && !guest;
+    // Add bottom border line after every 3rd seat (except the last)
+    const isGroupEnd = (sideIndex + 1) % 3 === 0 && sideIndex < seatsPerSide - 1;
 
     return (
       <div
         key={`${side}-${seatIndex}`}
-        className={`w-8 h-10 flex items-center justify-center text-[9px] font-medium rounded-sm transition-all ${
-          guest ? 'cursor-pointer hover:brightness-90' : ''
-        }`}
+        className={`w-8 h-10 flex items-center justify-center text-[9px] font-medium rounded-sm transition-all cursor-pointer ${
+          isHighlighted ? 'ring-2 ring-green-500 scale-110' : ''
+        } ${guest ? 'hover:brightness-90' : 'hover:bg-green-100'}`}
         style={{
-          backgroundColor: guest ? seatBg : 'white',
-          border: guest ? '2px solid #9ca3af' : '2px dashed #d1d5db',
+          backgroundColor: guest ? seatBg : isHighlighted ? '#dcfce7' : 'white',
+          border: guest ? '2px solid #9ca3af' : isHighlighted ? '2px solid #22c55e' : '2px dashed #d1d5db',
+          borderBottom: isGroupEnd ? '3px solid #374151' : undefined,
         }}
         title={guest
-          ? `${guest.first_name} (${party?.name || 'Unknown'})\n${guest.food_preference || 'No preference'}`
-          : `Seat ${seatIndex + 1}`
+          ? `${guest.first_name} (${party?.name || 'Unknown'})\n${guest.food_preference || 'No preference'}\nClick to remove`
+          : `Seat ${seatIndex + 1} - Click to assign`
         }
         onClick={(e) => {
+          e.stopPropagation();
           if (guest) {
-            e.stopPropagation();
-            onRemoveGuest(guest.id);
+            onRemoveGuest(tableNumber, seatIndex);
+          } else if (selectedGuest) {
+            onSeatClick(tableNumber, seatIndex);
           }
         }}
       >
@@ -130,39 +135,45 @@ const LongTable = ({
     );
   };
 
-  const tableHeight = seatsPerSide * 28 + 20;
+  // Calculate table height to match seats: h-10 (40px) + gap-1 (4px) per seat
+  const tableHeight = seatsPerSide * 44 - 4;
 
   return (
-    <div
-      className={`flex flex-col items-center cursor-pointer transition-all ${
-        isHighlighted ? 'scale-105' : 'hover:scale-102'
-      }`}
-      onClick={onClick}
-    >
+    <div className="flex flex-col items-center">
       {/* Table name */}
       <div className="text-sm font-medium text-gray-700 mb-2">
         {tableName}
-        <span className="text-xs text-gray-400 ml-1">({guests.length}/{seats})</span>
+        <span className="text-xs text-gray-400 ml-1">({assignedCount}/{seats})</span>
       </div>
 
       <div className="flex items-center gap-1">
         {/* Left side seats */}
         <div className="flex flex-col gap-1">
           {Array.from({ length: seatsPerSide }).map((_, idx) =>
-            renderSeat(idx, leftGuests[idx], 'left')
+            renderSeat(idx, 'left', idx)
           )}
         </div>
 
-        {/* Table surface */}
+        {/* Table surface with group divider lines */}
         <div
-          className="rounded transition-all flex items-center justify-center"
+          className="rounded flex flex-col items-center justify-between relative"
           style={{
             width: 40,
             height: tableHeight,
-            backgroundColor: isHighlighted ? '#86efac' : '#6b7280',
-            border: isHighlighted ? '3px solid #22c55e' : '3px solid #4b5563',
+            backgroundColor: '#6b7280',
+            border: '3px solid #4b5563',
           }}
         >
+          {/* Group divider lines on the table */}
+          {Array.from({ length: Math.ceil(seatsPerSide / 3) - 1 }).map((_, idx) => (
+            <div
+              key={idx}
+              className="absolute w-full h-[2px] bg-gray-400"
+              style={{
+                top: `${((idx + 1) * 3 / seatsPerSide) * 100}%`,
+              }}
+            />
+          ))}
           <span className="text-white font-bold text-lg rotate-90 whitespace-nowrap">
             {tableNumber}
           </span>
@@ -171,7 +182,7 @@ const LongTable = ({
         {/* Right side seats */}
         <div className="flex flex-col gap-1">
           {Array.from({ length: seatsPerSide }).map((_, idx) =>
-            renderSeat(seatsPerSide + idx, rightGuests[idx], 'right')
+            renderSeat(seatsPerSide + idx, 'right', idx)
           )}
         </div>
       </div>
@@ -179,81 +190,79 @@ const LongTable = ({
   );
 };
 
-// Bride & Groom Component
-const BrideGroomSection = () => {
+// Stage Component (spans between Tables B and D)
+const StageSection = () => {
   return (
-    <div className="flex flex-col items-center">
-      {/* Stage */}
-      <div className="w-48 h-12 bg-purple-200 border-2 border-purple-400 rounded-lg flex items-center justify-center mb-4">
+    <div className="w-[420px]">
+      <div className="h-10 bg-purple-200 border-2 border-purple-400 rounded-lg flex items-center justify-center">
         <span className="text-sm font-medium text-purple-700">Stage</span>
-      </div>
-
-      {/* B&G seats */}
-      <div className="flex gap-4 mb-2">
-        <div
-          className="w-10 h-12 rounded-full border-2 border-gray-400 flex items-center justify-center"
-          style={{ backgroundColor: '#f9a8d4' }}
-        >
-          <span className="text-lg">👰</span>
-        </div>
-        <div
-          className="w-10 h-12 rounded-full border-2 border-gray-400 flex items-center justify-center"
-          style={{ backgroundColor: '#93c5fd' }}
-        >
-          <span className="text-lg">🤵</span>
-        </div>
-      </div>
-
-      {/* B&G table */}
-      <div className="w-24 h-8 bg-gray-600 rounded flex items-center justify-center">
-        <span className="text-xs font-bold text-white">Bride & Groom</span>
       </div>
     </div>
   );
 };
 
-// Party Card Component
-const PartyCard = ({
+// Bride & Groom Component (positioned closer to Table C)
+const BrideGroomSection = () => {
+  return (
+    <div className="flex flex-col items-center">
+      {/* B&G seats */}
+      <div className="flex gap-3 mb-2">
+        <div
+          className="w-9 h-11 rounded-full border-2 border-gray-400 flex items-center justify-center"
+          style={{ backgroundColor: '#f9a8d4' }}
+        >
+          <span className="text-base">👰</span>
+        </div>
+        <div
+          className="w-9 h-11 rounded-full border-2 border-gray-400 flex items-center justify-center"
+          style={{ backgroundColor: '#93c5fd' }}
+        >
+          <span className="text-base">🤵</span>
+        </div>
+      </div>
+
+      {/* B&G table */}
+      <div className="w-20 h-6 bg-gray-600 rounded flex items-center justify-center">
+        <span className="text-[10px] font-bold text-white">B & G</span>
+      </div>
+    </div>
+  );
+};
+
+// Individual Guest Card Component
+const GuestCard = ({
+  guest,
   party,
   isSelected,
   onSelect,
 }: {
-  party: Party;
+  guest: Guest;
+  party: Party | undefined;
   isSelected: boolean;
-  onSelect: (party: Party) => void;
+  onSelect: (guest: Guest) => void;
 }) => {
-  const sideBorder = party.from_side ? SIDE_BORDER_COLORS[party.from_side] || '' : '';
-  const sideColor = party.from_side ? SIDE_BADGE_COLORS[party.from_side] || 'text-gray-600' : 'text-gray-600';
+  const sideBorder = party?.from_side ? SIDE_BORDER_COLORS[party.from_side] || '' : '';
+  const sideColor = party?.from_side ? SIDE_BADGE_COLORS[party.from_side] || 'text-gray-600' : 'text-gray-600';
+  const bgColor = party?.type ? PARTY_TYPE_SEAT_BG[party.type] : undefined;
 
   return (
     <div
-      className={`p-3 rounded-lg border-2 cursor-pointer transition-all border-l-4 ${sideBorder} ${
+      className={`p-2 rounded-lg border-2 cursor-pointer transition-all border-l-4 ${sideBorder} ${
         isSelected
           ? 'ring-2 ring-green-500 border-green-400 bg-green-50'
           : 'border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50'
       }`}
-      onClick={() => onSelect(party)}
+      style={bgColor && !isSelected ? { backgroundColor: `${bgColor}30` } : undefined}
+      onClick={() => onSelect(guest)}
     >
-      <div className="flex items-center justify-between mb-1">
-        <span className="font-medium text-sm text-gray-800">{party.name}</span>
-        <Badge
-          variant="outline"
-          className={`text-xs ${isSelected ? 'bg-green-100 text-green-700' : ''}`}
-        >
-          {party.guests.length}
-        </Badge>
+      <div className="flex items-center gap-2">
+        <User size={14} className="text-gray-400" />
+        <span className="font-medium text-sm text-gray-800">{guest.first_name}</span>
       </div>
-      <div className="text-xs text-gray-500">
-        <span className="text-gray-600">{party.type || 'Unknown'}</span>
+      <div className="text-xs text-gray-500 mt-1 ml-5">
+        <span className="text-gray-600">{party?.name || 'Unknown'}</span>
         <span className="mx-1">•</span>
-        <span className={sideColor}>{party.from_side || 'No side'}</span>
-      </div>
-      <div className="mt-2 flex flex-wrap gap-1">
-        {party.guests.map(g => (
-          <span key={g.id} className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-700">
-            {g.first_name?.split(' ')[0]}
-          </span>
-        ))}
+        <span className={sideColor}>{party?.from_side || '-'}</span>
       </div>
     </div>
   );
@@ -264,10 +273,12 @@ export default function AdminSeating2Page() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [parties, setParties] = useState<Party[]>([]);
-  const [tableAssignments, setTableAssignments] = useState<Map<number, Guest[]>>(new Map());
+  const [allGuests, setAllGuests] = useState<Guest[]>([]);
+  // Seat assignments: Map<tableNumber, Array<Guest | null>> where index is seat position
+  const [seatAssignments, setSeatAssignments] = useState<Map<number, (Guest | null)[]>>(new Map());
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [selectedParty, setSelectedParty] = useState<Party | null>(null);
+  const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSide, setFilterSide] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
@@ -281,10 +292,6 @@ export default function AdminSeating2Page() {
   const [viewMode, setViewMode] = useState<'visual' | 'table'>('visual');
 
   const correctPassword = 'ChanikaDavid2026!';
-
-  const getTableCapacity = (tableNum: number) => {
-    return TABLE_CONFIG[tableNum as keyof typeof TABLE_CONFIG]?.seats || 10;
-  };
 
   useEffect(() => {
     const savedSession = localStorage.getItem('wedding-admin-session');
@@ -306,6 +313,31 @@ export default function AdminSeating2Page() {
       }));
     }
   };
+
+  // Load saved assignments from localStorage
+  const loadSavedAssignments = useCallback((guests: Guest[]) => {
+    try {
+      const saved = localStorage.getItem('wedding-seating-layout2');
+      if (saved) {
+        const savedAssignments: Record<number, (string | null)[]> = JSON.parse(saved);
+        const guestMap = new Map(guests.map(g => [g.id, g]));
+
+        const assignments = new Map<number, (Guest | null)[]>();
+        for (let i = 1; i <= TOTAL_TABLES; i++) {
+          const config = TABLE_CONFIG[i as keyof typeof TABLE_CONFIG];
+          if (savedAssignments[i]) {
+            assignments.set(i, savedAssignments[i].map(id => id ? guestMap.get(id) || null : null));
+          } else {
+            assignments.set(i, Array(config.seats).fill(null));
+          }
+        }
+        return assignments;
+      }
+    } catch (error) {
+      console.error('Error loading saved assignments:', error);
+    }
+    return null;
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -330,23 +362,27 @@ export default function AdminSeating2Page() {
       })).filter(p => p.guests.length > 0);
 
       setParties(partiesWithGuests);
+      setAllGuests(guestsData || []);
 
-      // Initialize empty assignments for layout 2
-      const assignments = new Map<number, Guest[]>();
-      for (let i = 1; i <= TOTAL_TABLES; i++) {
-        assignments.set(i, []);
+      // Try to load saved assignments, otherwise initialize empty
+      const savedAssignments = loadSavedAssignments(guestsData || []);
+      if (savedAssignments) {
+        setSeatAssignments(savedAssignments);
+      } else {
+        // Initialize empty seat assignments
+        const assignments = new Map<number, (Guest | null)[]>();
+        for (let i = 1; i <= TOTAL_TABLES; i++) {
+          const config = TABLE_CONFIG[i as keyof typeof TABLE_CONFIG];
+          assignments.set(i, Array(config.seats).fill(null));
+        }
+        setSeatAssignments(assignments);
       }
-
-      // Note: This layout uses different table numbers, so we start fresh
-      // In a real scenario, you might want to store layout-specific assignments
-
-      setTableAssignments(assignments);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadSavedAssignments]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -354,37 +390,53 @@ export default function AdminSeating2Page() {
     }
   }, [isAuthenticated, fetchData]);
 
-  const getUnassignedParties = () => {
-    const assignedGuestIds = new Set<string>();
-    tableAssignments.forEach(guests => {
-      guests.forEach(g => assignedGuestIds.add(g.id));
+  // Get all assigned guest IDs
+  const getAssignedGuestIds = () => {
+    const ids = new Set<string>();
+    seatAssignments.forEach(seats => {
+      seats.forEach(guest => {
+        if (guest) ids.add(guest.id);
+      });
     });
-
-    return parties.filter(party => {
-      return party.guests.some(g => !assignedGuestIds.has(g.id));
-    });
+    return ids;
   };
 
-  const getFilteredParties = () => {
-    let filtered = getUnassignedParties();
+  // Get unassigned guests
+  const getUnassignedGuests = () => {
+    const assignedIds = getAssignedGuestIds();
+    return allGuests.filter(g => !assignedIds.has(g.id));
+  };
+
+  // Get filtered guests
+  const getFilteredGuests = () => {
+    let filtered = getUnassignedGuests();
 
     if (filterSide !== 'all') {
-      filtered = filtered.filter(p => p.from_side === filterSide);
+      filtered = filtered.filter(g => {
+        const party = parties.find(p => p.id === g.party_id);
+        return party?.from_side === filterSide;
+      });
     }
 
     if (filterType !== 'all') {
-      filtered = filtered.filter(p => p.type === filterType);
+      filtered = filtered.filter(g => {
+        const party = parties.find(p => p.id === g.party_id);
+        return party?.type === filterType;
+      });
     }
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(p =>
-        p.name.toLowerCase().includes(term) ||
-        p.guests.some(g => g.first_name?.toLowerCase().includes(term))
-      );
+      filtered = filtered.filter(g => {
+        const party = parties.find(p => p.id === g.party_id);
+        return (
+          g.first_name?.toLowerCase().includes(term) ||
+          party?.name.toLowerCase().includes(term)
+        );
+      });
     }
 
-    return filtered.sort((a, b) => a.name.localeCompare(b.name));
+    return filtered.sort((a, b) => (a.first_name || '').localeCompare(b.first_name || ''));
   };
 
   const getPartyTypes = () => {
@@ -395,47 +447,39 @@ export default function AdminSeating2Page() {
     return Array.from(types).sort();
   };
 
-  const canPartyFitInTable = (tableNum: number) => {
-    if (!selectedParty) return false;
-    const currentGuests = tableAssignments.get(tableNum)?.length || 0;
-    const capacity = getTableCapacity(tableNum);
-    return currentGuests + selectedParty.guests.length <= capacity;
+  const handleSeatClick = (tableNum: number, seatIndex: number) => {
+    if (!selectedGuest) return;
+
+    const newAssignments = new Map(seatAssignments);
+    const tableSeats = [...(newAssignments.get(tableNum) || [])];
+
+    // Check if seat is already occupied
+    if (tableSeats[seatIndex]) return;
+
+    tableSeats[seatIndex] = selectedGuest;
+    newAssignments.set(tableNum, tableSeats);
+    setSeatAssignments(newAssignments);
+    setSelectedGuest(null);
   };
 
-  const handleAssignParty = (tableNumber: number) => {
-    if (!selectedParty || !canPartyFitInTable(tableNumber)) return;
-
-    const newAssignments = new Map(tableAssignments);
-    const tableGuests = [...(newAssignments.get(tableNumber) || [])];
-
-    selectedParty.guests.forEach(guest => {
-      if (!tableGuests.find(g => g.id === guest.id)) {
-        tableGuests.push({ ...guest, table_number: tableNumber.toString() });
-      }
-    });
-
-    newAssignments.set(tableNumber, tableGuests);
-    setTableAssignments(newAssignments);
-    setSelectedParty(null);
-  };
-
-  const handleRemoveGuest = (guestId: string) => {
-    const newAssignments = new Map(tableAssignments);
-
-    newAssignments.forEach((guests, tableNum) => {
-      const filtered = guests.filter(g => g.id !== guestId);
-      newAssignments.set(tableNum, filtered);
-    });
-
-    setTableAssignments(newAssignments);
+  const handleRemoveGuest = (tableNum: number, seatIndex: number) => {
+    const newAssignments = new Map(seatAssignments);
+    const tableSeats = [...(newAssignments.get(tableNum) || [])];
+    tableSeats[seatIndex] = null;
+    newAssignments.set(tableNum, tableSeats);
+    setSeatAssignments(newAssignments);
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      // For layout 2, we would need a different storage mechanism
-      // For now, just show success
-      alert('Layout 2 seating saved! Note: This layout uses a different table structure.');
+      // Convert Map to array format for localStorage
+      const assignmentsToSave: Record<number, (string | null)[]> = {};
+      seatAssignments.forEach((seats, tableNum) => {
+        assignmentsToSave[tableNum] = seats.map(guest => guest?.id || null);
+      });
+      localStorage.setItem('wedding-seating-layout2', JSON.stringify(assignmentsToSave));
+      alert('Seating assignments saved!');
     } catch (error) {
       console.error('Error saving:', error);
       alert('Error saving assignments. Please try again.');
@@ -445,15 +489,22 @@ export default function AdminSeating2Page() {
   };
 
   const handleExportCSV = () => {
-    const rows = ['Table_Number,Table_Name,Seat,Guest_ID,Name,Main_Course,Dietary_Restrictions'];
+    const rows = ['Table_Number,Table_Name,Seat,Side,Guest_ID,Name,Party,Type,Main_Course,Dietary_Restrictions'];
 
-    tableAssignments.forEach((guests, tableNum) => {
+    seatAssignments.forEach((seats, tableNum) => {
       const tName = tableNames[tableNum] || `Table ${tableNum}`;
-      guests.forEach((guest, seatIndex) => {
-        const dietary = guest.dietary_requirements || '';
-        rows.push(
-          `${tableNum},"${tName}",${seatIndex + 1},${guest.id},${guest.first_name || ''},${guest.food_preference || ''},"${dietary.replace(/"/g, '""')}"`
-        );
+      const config = TABLE_CONFIG[tableNum as keyof typeof TABLE_CONFIG];
+
+      seats.forEach((guest, seatIndex) => {
+        if (guest) {
+          const party = parties.find(p => p.id === guest.party_id);
+          const side = seatIndex < config.seatsPerSide ? 'Left' : 'Right';
+          const seatNum = seatIndex < config.seatsPerSide ? seatIndex + 1 : seatIndex - config.seatsPerSide + 1;
+          const dietary = guest.dietary_requirements || '';
+          rows.push(
+            `${tableNum},"${tName}",${side} ${seatNum},${seatIndex + 1},${guest.id},${guest.first_name || ''},"${party?.name || ''}","${party?.type || ''}",${guest.food_preference || ''},"${dietary.replace(/"/g, '""')}"`
+          );
+        }
       });
     });
 
@@ -465,8 +516,8 @@ export default function AdminSeating2Page() {
     a.click();
   };
 
-  const totalAssigned = Array.from(tableAssignments.values()).reduce((sum, guests) => sum + guests.length, 0);
-  const totalGuests = parties.reduce((sum, p) => sum + p.guests.length, 0);
+  const totalAssigned = getAssignedGuestIds().size;
+  const totalGuests = allGuests.length;
   const totalCapacity = Object.values(TABLE_CONFIG).reduce((sum, t) => sum + t.seats, 0);
 
   if (!isAuthenticated) {
@@ -556,22 +607,22 @@ export default function AdminSeating2Page() {
 
       <div className="max-w-[1800px] mx-auto p-4">
         <div className="flex gap-6">
-          {/* Left Panel - Party List */}
+          {/* Left Panel - Guest List */}
           <div className="w-72 flex-shrink-0">
             <div className="bg-white rounded-xl shadow p-4 sticky top-20">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-semibold text-gray-800 flex items-center gap-2">
                   <Users size={18} />
-                  Parties
+                  Guests
                 </h2>
                 <Badge variant="outline" className="text-xs">
-                  {getUnassignedParties().length} unassigned
+                  {getUnassignedGuests().length} unassigned
                 </Badge>
               </div>
 
               <div className="space-y-3 mb-4">
                 <Input
-                  placeholder="Search parties..."
+                  placeholder="Search guests..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="text-sm"
@@ -597,18 +648,18 @@ export default function AdminSeating2Page() {
                 </select>
               </div>
 
-              {selectedParty && (
+              {selectedGuest && (
                 <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                   <div className="font-medium text-green-800 text-sm">
-                    Selected: {selectedParty.name}
+                    Selected: {selectedGuest.first_name}
                   </div>
                   <p className="text-xs text-green-600 mt-1">
-                    Click a highlighted table to assign {selectedParty.guests.length} guest(s)
+                    Click an empty seat to assign
                   </p>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setSelectedParty(null)}
+                    onClick={() => setSelectedGuest(null)}
                     className="mt-2 text-xs h-7"
                   >
                     Cancel
@@ -616,22 +667,26 @@ export default function AdminSeating2Page() {
                 </div>
               )}
 
-              <div className="space-y-2 max-h-[calc(100vh-320px)] overflow-y-auto">
+              <div className="space-y-2 max-h-[calc(100vh-380px)] overflow-y-auto">
                 {loading ? (
                   <div className="text-center py-8 text-gray-500">Loading...</div>
-                ) : getFilteredParties().length === 0 ? (
+                ) : getFilteredGuests().length === 0 ? (
                   <div className="text-center py-8 text-gray-500 text-sm">
-                    All parties assigned!
+                    All guests assigned!
                   </div>
                 ) : (
-                  getFilteredParties().map(party => (
-                    <PartyCard
-                      key={party.id}
-                      party={party}
-                      isSelected={selectedParty?.id === party.id}
-                      onSelect={setSelectedParty}
-                    />
-                  ))
+                  getFilteredGuests().map(guest => {
+                    const party = parties.find(p => p.id === guest.party_id);
+                    return (
+                      <GuestCard
+                        key={guest.id}
+                        guest={guest}
+                        party={party}
+                        isSelected={selectedGuest?.id === guest.id}
+                        onSelect={setSelectedGuest}
+                      />
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -645,76 +700,39 @@ export default function AdminSeating2Page() {
                   <div className="flex items-center gap-2 mb-6">
                     <h2 className="font-semibold text-gray-800">Long Table Layout</h2>
                     <span className="text-sm text-gray-500">
-                      (Click a party, then click a table to assign)
+                      (Select a guest, then click an empty seat)
                     </span>
                   </div>
 
                   {/* Venue Floor Plan */}
-                  <div className="flex flex-col items-center gap-8">
-                    {/* Bride & Groom + Stage at top */}
-                    <BrideGroomSection />
+                  <div className="flex flex-col items-center gap-4">
+                    {/* Stage at top */}
+                    <StageSection />
 
-                    {/* 5 Long Tables */}
-                    <div className="flex items-end justify-center gap-6">
-                      {/* Table A (24 seats) */}
-                      <LongTable
-                        tableNumber={1}
-                        tableName={tableNames[1]}
-                        guests={tableAssignments.get(1) || []}
-                        config={TABLE_CONFIG[1]}
-                        onRemoveGuest={handleRemoveGuest}
-                        isHighlighted={canPartyFitInTable(1)}
-                        onClick={() => handleAssignParty(1)}
-                        parties={parties}
-                      />
+                    {/* 5 Long Tables with B&G positioned at B/D height */}
+                    <div className="relative">
+                      {/* B&G absolutely positioned at the height of Tables B/D */}
+                      {/* Top offset: ~135px from where B/D start (3 seats × 44px + label height) */}
+                      <div className="absolute left-1/2 -translate-x-1/2 top-[22px] z-10">
+                        <BrideGroomSection />
+                      </div>
 
-                      {/* Table B (18 seats) */}
-                      <LongTable
-                        tableNumber={2}
-                        tableName={tableNames[2]}
-                        guests={tableAssignments.get(2) || []}
-                        config={TABLE_CONFIG[2]}
-                        onRemoveGuest={handleRemoveGuest}
-                        isHighlighted={canPartyFitInTable(2)}
-                        onClick={() => handleAssignParty(2)}
-                        parties={parties}
-                      />
-
-                      {/* Table C (6 seats - center) */}
-                      <LongTable
-                        tableNumber={3}
-                        tableName={tableNames[3]}
-                        guests={tableAssignments.get(3) || []}
-                        config={TABLE_CONFIG[3]}
-                        onRemoveGuest={handleRemoveGuest}
-                        isHighlighted={canPartyFitInTable(3)}
-                        onClick={() => handleAssignParty(3)}
-                        parties={parties}
-                      />
-
-                      {/* Table D (18 seats) */}
-                      <LongTable
-                        tableNumber={4}
-                        tableName={tableNames[4]}
-                        guests={tableAssignments.get(4) || []}
-                        config={TABLE_CONFIG[4]}
-                        onRemoveGuest={handleRemoveGuest}
-                        isHighlighted={canPartyFitInTable(4)}
-                        onClick={() => handleAssignParty(4)}
-                        parties={parties}
-                      />
-
-                      {/* Table E (24 seats) */}
-                      <LongTable
-                        tableNumber={5}
-                        tableName={tableNames[5]}
-                        guests={tableAssignments.get(5) || []}
-                        config={TABLE_CONFIG[5]}
-                        onRemoveGuest={handleRemoveGuest}
-                        isHighlighted={canPartyFitInTable(5)}
-                        onClick={() => handleAssignParty(5)}
-                        parties={parties}
-                      />
+                      <div className="flex items-end justify-center gap-12">
+                        {/* All 5 tables */}
+                        {[1, 2, 3, 4, 5].map(tableNum => (
+                          <LongTable
+                            key={tableNum}
+                            tableNumber={tableNum}
+                            tableName={tableNames[tableNum]}
+                            seatAssignments={seatAssignments.get(tableNum) || []}
+                            config={TABLE_CONFIG[tableNum as keyof typeof TABLE_CONFIG]}
+                            onSeatClick={handleSeatClick}
+                            onRemoveGuest={handleRemoveGuest}
+                            selectedGuest={selectedGuest}
+                            parties={parties}
+                          />
+                        ))}
+                      </div>
                     </div>
 
                     {/* Terrace at bottom */}
@@ -764,9 +782,9 @@ export default function AdminSeating2Page() {
                   {/* Tabular View */}
                   <div className="space-y-4">
                     {Array.from({ length: TOTAL_TABLES }, (_, i) => i + 1).map(tableNum => {
-                      const guests = tableAssignments.get(tableNum) || [];
+                      const seats = seatAssignments.get(tableNum) || [];
                       const config = TABLE_CONFIG[tableNum as keyof typeof TABLE_CONFIG];
-                      const capacity = config.seats;
+                      const assignedCount = seats.filter(s => s !== null).length;
 
                       return (
                         <div key={tableNum} className="border rounded-lg overflow-hidden">
@@ -784,13 +802,13 @@ export default function AdminSeating2Page() {
                             </div>
                             <Badge
                               variant="secondary"
-                              className={`${guests.length === capacity ? 'bg-green-100 text-green-700' : 'bg-white text-gray-700'}`}
+                              className={`${assignedCount === config.seats ? 'bg-green-100 text-green-700' : 'bg-white text-gray-700'}`}
                             >
-                              {guests.length}/{capacity} seats
+                              {assignedCount}/{config.seats} seats
                             </Badge>
                           </div>
 
-                          {guests.length > 0 ? (
+                          {assignedCount > 0 ? (
                             <table className="w-full">
                               <thead className="bg-gray-50">
                                 <tr>
@@ -804,7 +822,8 @@ export default function AdminSeating2Page() {
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-100">
-                                {guests.map((guest, idx) => {
+                                {seats.map((guest, idx) => {
+                                  if (!guest) return null;
                                   const party = parties.find(p => p.id === guest.party_id);
                                   const bgColor = party?.type ? PARTY_TYPE_SEAT_BG[party.type] : undefined;
                                   const side = idx < config.seatsPerSide ? 'Left' : 'Right';
