@@ -28,24 +28,28 @@ const menus: MenuConfig[] = [
   {
     id: 'food',
     title: 'Food Menu',
-    subtitle: 'Dinner (from 6:30 PM)',
+    subtitle: 'Dinner (from 7:00 PM)',
     imagePath: '/menu/food-menu.png',
-    unlockHour: 18, // 6:30 PM
-    unlockMinute: 30,
+    unlockHour: 19, // 7:00 PM
+    unlockMinute: 0,
     icon: UtensilsCrossed,
   },
   {
     id: 'drinks',
     title: 'Drinks',
-    subtitle: 'Dinner (from 6:30 PM)',
+    subtitle: 'Dinner (from 7:00 PM)',
     imagePath: '/menu/drink-menu.png',
-    unlockHour: 18, // 6:30 PM
-    unlockMinute: 30,
+    unlockHour: 19, // 7:00 PM
+    unlockMinute: 0,
     icon: GlassWater,
   },
 ]
 
-const MenuSection: React.FC = () => {
+interface MenuSectionProps {
+  forceUnlock?: boolean
+}
+
+const MenuSection: React.FC<MenuSectionProps> = ({ forceUnlock = false }) => {
   const [openMenu, setOpenMenu] = useState<MenuConfig | null>(null)
 
   return (
@@ -72,6 +76,7 @@ const MenuSection: React.FC = () => {
             unlockMinute={menu.unlockMinute}
             icon={menu.icon}
             onClick={() => setOpenMenu(menu)}
+            forceUnlock={forceUnlock}
           />
         ))}
       </div>

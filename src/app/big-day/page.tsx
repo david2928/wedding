@@ -13,37 +13,70 @@ import { supabase } from '@/lib/supabase/client'
 import type { Tables } from '@/lib/supabase/types'
 
 type Party = Tables<'parties'>
+type Guest = Tables<'guests'>
+
+interface GuestWithParty extends Guest {
+  party_name?: string
+}
 
 export default function BigDayPage() {
   const [devMode, setDevMode] = useState(false)
   const [devModeChecked, setDevModeChecked] = useState(false)
   const [party, setParty] = useState<Party | null>(null)
+  const [allGuests, setAllGuests] = useState<GuestWithParty[]>([])
+  const [selectedGuestId, setSelectedGuestId] = useState<string>('')
 
   useEffect(() => {
     const wasDevModeEnabled = isDevModeEnabled()
     if (wasDevModeEnabled) {
       setDevMode(true)
-      // In dev mode, fetch a test party
-      fetchTestParty()
+      fetchGuestsForSelector()
     }
     setDevModeChecked(true)
   }, [])
 
-  const fetchTestParty = async () => {
-    const { data } = await supabase
-      .from('parties')
-      .select('*')
-      .limit(1)
-      .single()
-    if (data) {
-      setParty(data)
+  const fetchGuestsForSelector = async () => {
+    // Fetch all attending guests with their party info
+    const { data: guests } = await supabase
+      .from('guests')
+      .select('*, parties(name)')
+      .eq('rsvp_status', 'Attending')
+      .not('table_number', 'is', null)
+      .order('first_name')
+
+    if (guests) {
+      const guestsWithParty = guests.map(g => ({
+        ...g,
+        party_name: (g.parties as { name: string } | null)?.name || 'Unknown'
+      }))
+      setAllGuests(guestsWithParty)
+    }
+  }
+
+  const handleGuestSelect = async (guestId: string) => {
+    setSelectedGuestId(guestId)
+    if (!guestId) {
+      setParty(null)
+      return
+    }
+
+    const guest = allGuests.find(g => g.id === guestId)
+    if (guest?.party_id) {
+      const { data } = await supabase
+        .from('parties')
+        .select('*')
+        .eq('id', guest.party_id)
+        .single()
+      if (data) {
+        setParty(data)
+      }
     }
   }
 
   const handleDevBypass = () => {
     enableDevMode()
     setDevMode(true)
-    fetchTestParty()
+    fetchGuestsForSelector()
   }
 
   const handlePartyResolved = (resolvedParty: Party) => {
@@ -85,9 +118,44 @@ export default function BigDayPage() {
     )
   }
 
-  // Dev mode active - show content directly
+  // Dev mode active - show content with guest selector
   if (devMode) {
-    return <BigDayContent partyId={party?.id || null} isWalkIn={party?.type === 'walk-in'} />
+    const selectedGuest = allGuests.find(g => g.id === selectedGuestId)
+    return (
+      <div>
+        {/* Guest Selector Bar */}
+        <div className="sticky top-0 z-50 bg-orange-100 border-b border-orange-300 px-4 py-3">
+          <div className="max-w-5xl mx-auto flex items-center gap-4 flex-wrap">
+            <span className="text-sm font-medium text-orange-800">Dev Mode - View as guest:</span>
+            <select
+              value={selectedGuestId}
+              onChange={(e) => handleGuestSelect(e.target.value)}
+              className="flex-1 max-w-md border border-orange-300 rounded-md px-3 py-2 text-sm bg-white"
+            >
+              <option value="">Select a guest...</option>
+              {allGuests.map(guest => {
+                // Parse seat code (e.g., "A-L5" or just "A")
+                const match = guest.table_number?.match(/^([A-E])(?:-([LR])(\d+))?$/)
+                const tableDisplay = match
+                  ? `Table ${match[1]}${match[2] ? ` (${match[2] === 'L' ? 'Left' : 'Right'} ${match[3]})` : ''}`
+                  : guest.table_number
+                return (
+                  <option key={guest.id} value={guest.id}>
+                    {guest.first_name} - {tableDisplay} ({guest.party_name})
+                  </option>
+                )
+              })}
+            </select>
+            {selectedGuest && (
+              <span className="text-sm text-orange-700">
+                Viewing as: <strong>{selectedGuest.first_name}</strong> (Table {selectedGuest.table_number})
+              </span>
+            )}
+          </div>
+        </div>
+        <BigDayContent partyId={party?.id || null} isWalkIn={party?.type === 'walk-in'} forceUnlock={true} />
+      </div>
+    )
   }
 
   // Production - use GuestGate
@@ -101,9 +169,10 @@ export default function BigDayPage() {
 interface BigDayContentProps {
   partyId: string | null
   isWalkIn?: boolean
+  forceUnlock?: boolean
 }
 
-function BigDayContent({ partyId, isWalkIn = false }: BigDayContentProps) {
+function BigDayContent({ partyId, isWalkIn = false, forceUnlock = false }: BigDayContentProps) {
   return (
     <div
       className="min-h-screen py-8 px-4"
@@ -132,10 +201,10 @@ function BigDayContent({ partyId, isWalkIn = false }: BigDayContentProps) {
         <QuickLinks />
 
         {/* Seating Section - hidden for walk-in guests */}
-        {!isWalkIn && <SeatingSection partyId={partyId} />}
+        {!isWalkIn && <SeatingSection partyId={partyId} forceUnlock={forceUnlock} />}
 
         {/* Menu Section */}
-        <MenuSection />
+        <MenuSection forceUnlock={forceUnlock} />
       </div>
     </div>
   )

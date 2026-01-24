@@ -514,7 +514,49 @@ export default function AdminSeating2Page() {
         assignmentsToSave[tableNum] = seats.map(guest => guest?.id || null);
       });
       localStorage.setItem('wedding-seating-layout2', JSON.stringify(assignmentsToSave));
-      alert('Seating assignments saved!');
+
+      // Map table numbers to letters for database
+      const TABLE_LETTERS: Record<number, string> = { 1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E' };
+
+      // Track all assigned guest IDs
+      const assignedGuestIds = new Set<string>();
+
+      // Update each guest's table_number in database with seat position
+      // Format: "A-L5" = Table A, Left side, Seat 5
+      for (const [tableNum, seats] of seatAssignments.entries()) {
+        const tableLetter = TABLE_LETTERS[tableNum];
+        const config = TABLE_CONFIG[tableNum as keyof typeof TABLE_CONFIG];
+        const seatsPerSide = config.seatsPerSide;
+
+        for (let seatIndex = 0; seatIndex < seats.length; seatIndex++) {
+          const guest = seats[seatIndex];
+          if (guest) {
+            assignedGuestIds.add(guest.id);
+
+            // Determine side and seat number
+            const isLeftSide = seatIndex < seatsPerSide;
+            const side = isLeftSide ? 'L' : 'R';
+            const seatNum = isLeftSide ? seatIndex + 1 : seatIndex - seatsPerSide + 1;
+            const seatCode = `${tableLetter}-${side}${seatNum}`;
+
+            await supabase
+              .from('guests')
+              .update({ table_number: seatCode })
+              .eq('id', guest.id);
+          }
+        }
+      }
+
+      // Clear table_number for unassigned guests
+      const unassignedGuests = allGuests.filter(g => !assignedGuestIds.has(g.id));
+      for (const guest of unassignedGuests) {
+        await supabase
+          .from('guests')
+          .update({ table_number: null })
+          .eq('id', guest.id);
+      }
+
+      alert('Seating assignments saved to database!');
     } catch (error) {
       console.error('Error saving:', error);
       alert('Error saving assignments. Please try again.');

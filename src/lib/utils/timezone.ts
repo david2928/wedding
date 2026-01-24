@@ -6,6 +6,14 @@
 const THAILAND_TIMEZONE = 'Asia/Bangkok'
 
 /**
+ * Check if all content should be unlocked (for testing before wedding day)
+ * Set NEXT_PUBLIC_UNLOCK_ALL_CONTENT=true in environment to bypass time locks
+ */
+export function isUnlockAllEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_UNLOCK_ALL_CONTENT === 'true'
+}
+
+/**
  * Get current time in Thailand (UTC+7)
  */
 export function getThailandTime(): Date {
@@ -42,6 +50,11 @@ export function isWeddingDay(): boolean {
  * @returns true if it's the wedding day and the current Thailand time is at or past the unlock time
  */
 export function isTimeUnlocked(hour: number, minute: number): boolean {
+  // If unlock all is enabled, bypass time checks (for testing)
+  if (isUnlockAllEnabled()) {
+    return true
+  }
+
   // Only unlock on the wedding day
   if (!isWeddingDay()) {
     return false

@@ -14,6 +14,7 @@ interface MenuCardProps {
   unlockMinute: number
   icon: LucideIcon
   onClick: () => void
+  forceUnlock?: boolean
 }
 
 const MenuCard: React.FC<MenuCardProps> = ({
@@ -24,10 +25,16 @@ const MenuCard: React.FC<MenuCardProps> = ({
   unlockMinute,
   icon: Icon,
   onClick,
+  forceUnlock = false,
 }) => {
-  const [isUnlocked, setIsUnlocked] = useState(false)
+  const [isUnlocked, setIsUnlocked] = useState(forceUnlock)
 
   useEffect(() => {
+    if (forceUnlock) {
+      setIsUnlocked(true)
+      return
+    }
+
     // Check immediately
     setIsUnlocked(isTimeUnlocked(unlockHour, unlockMinute))
 
@@ -37,7 +44,7 @@ const MenuCard: React.FC<MenuCardProps> = ({
     }, 30000)
 
     return () => clearInterval(interval)
-  }, [unlockHour, unlockMinute])
+  }, [unlockHour, unlockMinute, forceUnlock])
 
   const unlockTimeString = formatThailandTime(unlockHour, unlockMinute)
 
