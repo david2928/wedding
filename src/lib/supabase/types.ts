@@ -171,6 +171,51 @@ export type Database = {
         }
         Relationships: []
       }
+      gift_submissions: {
+        Row: {
+          amount: string | null
+          id: string
+          message: string | null
+          party_id: string | null
+          party_name: string
+          screenshot_url: string
+          submitted_at: string | null
+        }
+        Insert: {
+          amount?: string | null
+          id?: string
+          message?: string | null
+          party_id?: string | null
+          party_name: string
+          screenshot_url: string
+          submitted_at?: string | null
+        }
+        Update: {
+          amount?: string | null
+          id?: string
+          message?: string | null
+          party_id?: string | null
+          party_name?: string
+          screenshot_url?: string
+          submitted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_submissions_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard"
+            referencedColumns: ["party_id"]
+          },
+          {
+            foreignKeyName: "gift_submissions_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guests: {
         Row: {
           age_group: string | null

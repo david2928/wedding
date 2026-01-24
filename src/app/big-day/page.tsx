@@ -7,6 +7,7 @@ import HeroWelcome from '@/components/big-day/HeroWelcome'
 import QuickLinks from '@/components/big-day/QuickLinks'
 import MenuSection from '@/components/big-day/MenuSection'
 import SeatingSection from '@/components/big-day/SeatingSection'
+import GiftUploadSection from '@/components/big-day/GiftUploadSection'
 import { GuestGate } from '@/components/GuestGate'
 import { isDevModeEnabled, enableDevMode } from '@/lib/utils/devMode'
 import { supabase } from '@/lib/supabase/client'
@@ -153,7 +154,7 @@ export default function BigDayPage() {
             )}
           </div>
         </div>
-        <BigDayContent partyId={party?.id || null} isWalkIn={party?.type === 'walk-in'} forceUnlock={true} />
+        <BigDayContent partyId={party?.id || null} partyName={party?.name} isWalkIn={party?.type === 'walk-in'} forceUnlock={true} />
       </div>
     )
   }
@@ -161,18 +162,19 @@ export default function BigDayPage() {
   // Production - use GuestGate
   return (
     <GuestGate pageName="the big day info" onPartyResolved={handlePartyResolved}>
-      <BigDayContent partyId={party?.id || null} isWalkIn={party?.type === 'walk-in'} />
+      <BigDayContent partyId={party?.id || null} partyName={party?.name} isWalkIn={party?.type === 'walk-in'} />
     </GuestGate>
   )
 }
 
 interface BigDayContentProps {
   partyId: string | null
+  partyName?: string
   isWalkIn?: boolean
   forceUnlock?: boolean
 }
 
-function BigDayContent({ partyId, isWalkIn = false, forceUnlock = false }: BigDayContentProps) {
+function BigDayContent({ partyId, partyName, isWalkIn = false, forceUnlock = false }: BigDayContentProps) {
   return (
     <div
       className="min-h-screen py-8 px-4"
@@ -205,6 +207,9 @@ function BigDayContent({ partyId, isWalkIn = false, forceUnlock = false }: BigDa
 
         {/* Menu Section */}
         <MenuSection forceUnlock={forceUnlock} />
+
+        {/* Subtle gift upload link at the bottom */}
+        <GiftUploadSection partyId={partyId} partyName={partyName} />
       </div>
     </div>
   )
