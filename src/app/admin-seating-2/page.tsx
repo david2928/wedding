@@ -103,10 +103,12 @@ const LongTable = ({
     return (
       <div
         key={`${side}-${seatIndex}`}
-        className={`w-8 h-10 flex items-center justify-center text-[9px] font-medium rounded-sm transition-all cursor-pointer ${
-          isHighlighted ? 'ring-2 ring-green-500 scale-110' : ''
+        className={`flex items-center justify-center text-[8px] font-medium rounded-sm transition-all cursor-pointer ${
+          isHighlighted ? 'ring-2 ring-green-500 scale-105' : ''
         } ${guest ? 'hover:brightness-90' : 'hover:bg-green-100'}`}
         style={{
+          width: PX.seatWidth,
+          height: PX.seatHeight,
           backgroundColor: guest ? seatBg : isHighlighted ? '#dcfce7' : 'white',
           border: guest ? '2px solid #9ca3af' : isHighlighted ? '2px solid #22c55e' : '2px dashed #d1d5db',
           borderBottom: isGroupEnd ? '3px solid #374151' : undefined,
@@ -135,8 +137,9 @@ const LongTable = ({
     );
   };
 
-  // Calculate table height to match seats: h-10 (40px) + gap-1 (4px) per seat
-  const tableHeight = seatsPerSide * 44 - 4;
+  // Calculate table height: seat (32px) + gap (4px) = 36px per slot, minus last gap
+  const seatSlotHeight = PX.seatHeight + PX.seatGap; // 36px per seat slot
+  const tableHeight = seatsPerSide * seatSlotHeight - PX.seatGap; // subtract last gap
 
   return (
     <div className="flex flex-col items-center">
@@ -146,9 +149,9 @@ const LongTable = ({
         <span className="text-xs text-gray-400 ml-1">({assignedCount}/{seats})</span>
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center" style={{ gap: PX.seatGap }}>
         {/* Left side seats */}
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col" style={{ gap: PX.seatGap }}>
           {Array.from({ length: seatsPerSide }).map((_, idx) =>
             renderSeat(idx, 'left', idx)
           )}
@@ -158,7 +161,7 @@ const LongTable = ({
         <div
           className="rounded flex flex-col items-center justify-between relative"
           style={{
-            width: 40,
+            width: PX.tableSurface,
             height: tableHeight,
             backgroundColor: '#6b7280',
             border: '3px solid #4b5563',
@@ -180,7 +183,7 @@ const LongTable = ({
         </div>
 
         {/* Right side seats */}
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col" style={{ gap: PX.seatGap }}>
           {Array.from({ length: seatsPerSide }).map((_, idx) =>
             renderSeat(seatsPerSide + idx, 'right', idx)
           )}
@@ -190,40 +193,72 @@ const LongTable = ({
   );
 };
 
-// Stage Component (spans between Tables B and D)
+// Scale: ~60px = 1 meter (increased for better visibility)
+const SCALE = 60; // pixels per meter
+const MEASUREMENTS = {
+  totalWidth: 14, // 14M
+  totalHeight: 10, // 10M
+  tableTotalWidth: 1.6, // 1.6M seat-to-seat
+  tableGap: 1, // 1M between tables
+  seatLength: 0.6, // 0.6M per seat
+  topMargin: 1.8, // 1.8M from top edge to tables
+  bottomMargin: 1, // 1M from tables to terrace
+  bgTableWidth: 1.2, // 1.2M (2 seats x 0.6m)
+};
+
+// Calculated pixel values
+// Note: Seat height includes gap, so 12 seats = 7.2m = 432px total
+// Each seat slot = 36px (32px seat + 4px gap)
+const SEAT_GAP = 4;
+const PX = {
+  tableGap: MEASUREMENTS.tableGap * SCALE, // 60px
+  seatHeight: MEASUREMENTS.seatLength * SCALE - SEAT_GAP, // 32px per seat (+ 4px gap = 36px slot)
+  seatGap: SEAT_GAP,
+  seatWidth: 28, // seat width
+  tableSurface: 36, // table surface width
+  // Stage is 3m × 3m (positioned outside the 10m × 14m room)
+  stageSize: 3 * SCALE, // 180px
+  bgTableWidth: MEASUREMENTS.bgTableWidth * SCALE, // 72px
+};
+
+// Stage Component - 4M wide × 2.5M tall (fits in the 3.6M top margin above Tables B/D)
 const StageSection = () => {
+  const stageWidth = 4 * SCALE; // 240px
+  const stageHeight = 2.5 * SCALE; // 150px
   return (
-    <div className="w-[420px]">
-      <div className="h-10 bg-purple-200 border-2 border-purple-400 rounded-lg flex items-center justify-center">
-        <span className="text-sm font-medium text-purple-700">Stage</span>
-      </div>
+    <div
+      className="bg-purple-200 border-2 border-purple-400 rounded-lg flex items-center justify-center"
+      style={{ width: stageWidth, height: stageHeight }}
+    >
+      <span className="text-sm font-medium text-purple-700">Stage</span>
     </div>
   );
 };
 
-// Bride & Groom Component (positioned closer to Table C)
+// Bride & Groom Component (positioned above Table C)
+// B&G table: ~1.5M wide
 const BrideGroomSection = () => {
   return (
     <div className="flex flex-col items-center">
       {/* B&G seats */}
-      <div className="flex gap-3 mb-2">
+      <div className="flex gap-4 mb-2">
         <div
-          className="w-9 h-11 rounded-full border-2 border-gray-400 flex items-center justify-center"
+          className="w-12 h-14 rounded-full border-2 border-gray-400 flex items-center justify-center"
           style={{ backgroundColor: '#f9a8d4' }}
         >
-          <span className="text-base">👰</span>
+          <span className="text-xl">👰</span>
         </div>
         <div
-          className="w-9 h-11 rounded-full border-2 border-gray-400 flex items-center justify-center"
+          className="w-12 h-14 rounded-full border-2 border-gray-400 flex items-center justify-center"
           style={{ backgroundColor: '#93c5fd' }}
         >
-          <span className="text-base">🤵</span>
+          <span className="text-xl">🤵</span>
         </div>
       </div>
 
-      {/* B&G table */}
-      <div className="w-20 h-6 bg-gray-600 rounded flex items-center justify-center">
-        <span className="text-[10px] font-bold text-white">B & G</span>
+      {/* B&G table ~1.5M = 90px */}
+      <div style={{ width: 90 }} className="h-8 bg-gray-600 rounded flex items-center justify-center">
+        <span className="text-xs font-bold text-white">B & G</span>
       </div>
     </div>
   );
@@ -704,22 +739,71 @@ export default function AdminSeating2Page() {
                     </span>
                   </div>
 
-                  {/* Venue Floor Plan */}
-                  <div className="flex flex-col items-center gap-4">
-                    {/* Stage at top */}
-                    <StageSection />
+                  {/* Venue Floor Plan - Fixed 14M x 10M */}
+                  <div
+                    className="flex flex-col items-center border-2 border-gray-800 bg-gray-50 relative"
+                    style={{
+                      width: MEASUREMENTS.totalWidth * SCALE, // 840px (14m)
+                      height: MEASUREMENTS.totalHeight * SCALE, // 600px (10m)
+                      padding: '16px',
+                    }}
+                  >
+                    {/* Room dimension labels */}
+                    <div className="absolute -top-7 left-1/2 -translate-x-1/2 text-sm text-gray-600 font-medium">
+                      ← 14M →
+                    </div>
+                    <div className="absolute -left-10 top-1/2 -translate-y-1/2 -rotate-90 text-sm text-gray-600 font-medium whitespace-nowrap">
+                      ← 10M →
+                    </div>
 
-                    {/* 5 Long Tables with B&G positioned at B/D height */}
-                    <div className="relative">
-                      {/* B&G absolutely positioned at the height of Tables B/D */}
-                      {/* Top offset: ~135px from where B/D start (3 seats × 44px + label height) */}
-                      <div className="absolute left-1/2 -translate-x-1/2 top-[22px] z-10">
-                        <BrideGroomSection />
-                      </div>
+                    {/* Room layout: Top 1.8M (108px) | Tables 7.2M (432px) | Bottom 1M (60px) */}
 
-                      <div className="flex items-end justify-center gap-12">
-                        {/* All 5 tables */}
-                        {[1, 2, 3, 4, 5].map(tableNum => (
+                    {/* Stage 3m x 3m positioned at top center (between B and D) */}
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2">
+                      <StageSection />
+                    </div>
+
+                    {/* Tables positioned with bottom margin of 1M (60px) */}
+                    <div
+                      className="absolute left-0 right-0 flex justify-center"
+                      style={{ bottom: MEASUREMENTS.bottomMargin * SCALE }} // 60px from bottom
+                    >
+                      {/* Gap between tables: 1M = 60px */}
+                      <div className="flex items-end" style={{ gap: PX.tableGap }}>
+                        {/* Tables A and B */}
+                        {[1, 2].map(tableNum => (
+                          <LongTable
+                            key={tableNum}
+                            tableNumber={tableNum}
+                            tableName={tableNames[tableNum]}
+                            seatAssignments={seatAssignments.get(tableNum) || []}
+                            config={TABLE_CONFIG[tableNum as keyof typeof TABLE_CONFIG]}
+                            onSeatClick={handleSeatClick}
+                            onRemoveGuest={handleRemoveGuest}
+                            selectedGuest={selectedGuest}
+                            parties={parties}
+                          />
+                        ))}
+
+                        {/* Table C with B&G above */}
+                        <div className="flex flex-col items-center">
+                          <BrideGroomSection />
+                          <div className="mt-2">
+                            <LongTable
+                              tableNumber={3}
+                              tableName={tableNames[3]}
+                              seatAssignments={seatAssignments.get(3) || []}
+                              config={TABLE_CONFIG[3]}
+                              onSeatClick={handleSeatClick}
+                              onRemoveGuest={handleRemoveGuest}
+                              selectedGuest={selectedGuest}
+                              parties={parties}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Tables D and E */}
+                        {[4, 5].map(tableNum => (
                           <LongTable
                             key={tableNum}
                             tableNumber={tableNum}
@@ -735,11 +819,10 @@ export default function AdminSeating2Page() {
                       </div>
                     </div>
 
-                    {/* Terrace at bottom */}
-                    <div className="w-full max-w-4xl mt-4">
-                      <div className="h-12 bg-amber-100 border-2 border-amber-300 rounded-lg flex items-center justify-center text-amber-700 font-medium">
-                        Terrace
-                      </div>
+                    {/* Terrace line at absolute bottom */}
+                    <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center">
+                      <span className="text-xs text-gray-500 mb-1">Terrace</span>
+                      <div className="w-full h-[3px] bg-gray-800" />
                     </div>
                   </div>
 
