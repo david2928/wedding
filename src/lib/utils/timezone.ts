@@ -10,7 +10,7 @@ const THAILAND_TIMEZONE = 'Asia/Bangkok'
  * Set NEXT_PUBLIC_UNLOCK_ALL_CONTENT=true in environment to bypass time locks
  */
 export function isUnlockAllEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_UNLOCK_ALL_CONTENT === 'true'
+  return process.env.NEXT_PUBLIC_UNLOCK_ALL_CONTENT?.toLowerCase() === 'true'
 }
 
 /**
