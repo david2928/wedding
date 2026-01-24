@@ -254,7 +254,7 @@ export default function PortraitUploadPage() {
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-md w-full">
           <div className="bg-gradient-to-r from-ocean-blue to-sky-blue p-8 text-white text-center">
             <Camera className="w-16 h-16 mx-auto mb-4" />
-            <h1 className="font-dancing text-4xl italic mb-2">Portrait Photo</h1>
+            <h1 className="font-crimson text-4xl italic mb-2">Portrait Photo</h1>
             <p className="text-white/90">Sign in to upload</p>
           </div>
           <div className="p-8 text-center">
@@ -352,7 +352,7 @@ export default function PortraitUploadPage() {
               />
             </div>
           </div>
-          <h1 className="font-dancing text-4xl md:text-5xl italic text-ocean-blue mb-2">
+          <h1 className="font-crimson text-4xl md:text-5xl italic text-ocean-blue mb-2">
             Portrait Time
           </h1>
           <p className="text-deep-blue/70">

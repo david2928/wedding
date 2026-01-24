@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Poppins, Dancing_Script, Inter } from 'next/font/google'
+import { Poppins, Dancing_Script, Inter, Crimson_Pro } from 'next/font/google'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -22,6 +22,12 @@ const inter = Inter({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600'],
   variable: '--font-inter',
+})
+
+const crimsonPro = Crimson_Pro({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-crimson',
 })
 
 export const metadata: Metadata = {
@@ -69,7 +75,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${poppins.variable} ${dancing.variable} ${inter.variable}`}>
+    <html lang="en" className={`${poppins.variable} ${dancing.variable} ${inter.variable} ${crimsonPro.variable}`}>
       <body className="bg-soft-white min-h-screen">
         <QueryProvider>
           <TooltipProvider>

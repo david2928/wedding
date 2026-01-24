@@ -83,7 +83,7 @@ const GameCard: React.FC<GameCardProps> = ({ station, isCompleted, onClick }) =>
           </div>
 
           {/* Title */}
-          <h3 className={`font-dancing text-2xl font-bold ${
+          <h3 className={`font-crimson text-2xl font-bold ${
             isCompleted
               ? 'text-green-700'
               : isActive

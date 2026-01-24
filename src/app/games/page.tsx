@@ -53,7 +53,7 @@ export default function GamesPage() {
         <div className="rounded-2xl shadow-xl overflow-hidden max-w-md w-full" style={{ backgroundColor: '#FDFBF7' }}>
           <div className="bg-gradient-to-r from-ocean-blue to-sky-blue p-8 text-white text-center">
             <img src="/android-chrome-192x192.png" alt="C&D Logo" className="w-20 h-20 mx-auto mb-4" />
-            <h1 className="font-dancing text-4xl italic mb-2">Development Mode</h1>
+            <h1 className="font-crimson text-4xl italic mb-2">Development Mode</h1>
           </div>
           <div className="p-8 text-center">
             <Button
@@ -238,7 +238,7 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
             alt="C&D Logo"
             className="w-24 h-24 mx-auto mb-4"
           />
-          <h1 className="font-dancing text-4xl md:text-5xl italic text-ocean-blue mb-2">
+          <h1 className="font-crimson text-4xl md:text-5xl italic text-ocean-blue mb-2">
             Wedding Games
           </h1>
           <p className="text-deep-blue/70">
@@ -290,7 +290,7 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
             />
           </div>
 
-          <h2 className="font-dancing text-3xl italic text-ocean-blue mb-2">
+          <h2 className="font-crimson text-3xl italic text-ocean-blue mb-2">
             The Grand Prize Quiz
           </h2>
           <p className="text-sm text-deep-blue/50 mb-4">

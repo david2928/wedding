@@ -17,7 +17,7 @@ const GameProgress: React.FC<GameProgressProps> = ({ completed, total, activeGam
   return (
     <div className="rounded-2xl shadow-2xl p-8 mb-8" style={{ backgroundColor: '#FDFBF7', border: '2px solid #eee0d2' }}>
       <div className="text-center mb-6">
-        <h2 className="font-dancing text-3xl italic text-ocean-blue mb-3">
+        <h2 className="font-crimson text-3xl italic text-ocean-blue mb-3">
           Your Progress
         </h2>
         <div className="font-poppins text-4xl font-semibold text-ocean-blue">

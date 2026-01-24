@@ -242,10 +242,10 @@ export default function CompleteGamePage() {
     const isDev = process.env.NODE_ENV === 'development'
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-soft-white to-pale-blue/30 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-md w-full">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#fcf6eb' }}>
+        <div className="rounded-2xl shadow-xl overflow-hidden max-w-md w-full" style={{ backgroundColor: '#FDFBF7' }}>
           <div className="bg-gradient-to-r from-ocean-blue to-sky-blue p-8 text-white text-center">
-            <h1 className="font-dancing text-4xl italic mb-2">Game Station</h1>
+            <h1 className="font-crimson text-4xl italic mb-2">Game Station</h1>
             <p className="text-white/90">Sign in to continue</p>
           </div>
           <div className="p-8 text-center">
@@ -289,7 +289,7 @@ export default function CompleteGamePage() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#fcf6eb' }}>
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md text-center" style={{ border: '2px solid #fca5a5' }}>
+        <div className="rounded-2xl shadow-2xl p-8 max-w-md text-center" style={{ backgroundColor: '#FDFBF7', border: '2px solid #fca5a5' }}>
           <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-deep-blue mb-2">Oops!</h1>
           <p className="text-deep-blue/70 mb-6">{error}</p>
@@ -310,7 +310,7 @@ export default function CompleteGamePage() {
 
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#fcf6eb' }}>
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md text-center" style={{ border: '2px solid #86efac' }}>
+        <div className="rounded-2xl shadow-2xl p-8 max-w-md text-center" style={{ backgroundColor: '#FDFBF7', border: '2px solid #86efac' }}>
           {/* Game Icon with checkmark overlay */}
           <div className="relative w-32 h-32 mx-auto mb-6">
             <Image
@@ -368,7 +368,7 @@ export default function CompleteGamePage() {
             You've successfully completed:
           </p>
           {station && (
-            <p className="text-2xl font-dancing italic text-ocean-blue mb-6">
+            <p className="text-2xl font-crimson italic text-ocean-blue mb-6">
               {station.name}
             </p>
           )}
@@ -396,7 +396,7 @@ export default function CompleteGamePage() {
 
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#fcf6eb' }}>
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center" style={{ border: '2px solid #eee0d2' }}>
+        <div className="rounded-2xl shadow-2xl p-8 max-w-md w-full text-center" style={{ backgroundColor: '#FDFBF7', border: '2px solid #eee0d2' }}>
           {/* Game Icon */}
           <div className="relative w-32 h-32 mx-auto mb-6">
             <Image
@@ -408,7 +408,7 @@ export default function CompleteGamePage() {
             />
           </div>
 
-          <h1 className="text-3xl font-dancing italic text-ocean-blue mb-2">
+          <h1 className="text-3xl font-crimson italic text-ocean-blue mb-2">
             {station.name}
           </h1>
 
