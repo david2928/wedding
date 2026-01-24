@@ -1,30 +1,30 @@
 # Wedding Food Options Summary
 
-**Total Attending Guests:** 96 guests (excluding bride & groom)
-**Total Including Bride & Groom:** 98 people
+**Total Attending Guests:** 95 guests (excluding bride & groom)
+**Total Including Bride & Groom:** 97 people
 
 ---
 
 ## Meal Selection Breakdown
 
-### Adult Meals (88 guests)
+### Adult Meals (87 guests)
 
 | Main Course | Count | Percentage |
 |------------|-------|------------|
-| **Italian Set - Tuna** | 34 | 38.6% |
-| **Italian Set - Chicken** | 27 | 30.7% |
-| **Italian Set - Lamb** | 26 | 29.5% |
+| **Italian Set - Tuna** | 34 | 39.1% |
+| **Italian Set - Chicken** | 27 | 31.0% |
+| **Italian Set - Lamb** | 26 | 29.9% |
 | **Vegan** | 1 | 1.1% |
 
-### Children's Meals (8 guests)
+### Children's Meals (7 guests)
 
 | Meal Type | Count |
 |-----------|-------|
-| **Kids Meal** | 8 |
+| **Kids Meal** | 7 |
 
 **Age Breakdown:**
-- **Children (5-12 years):** 1 guest
-- **Toddlers (0-4 years):** 7 guests
+- **Children (5-12 years):** 1 guest (N'Thee - chose Italian Set - Chicken)
+- **Toddlers (0-4 years):** 7 guests (Kids Meal)
 
 ---
 
@@ -88,7 +88,7 @@ All Italian Set meals include the same appetizers, sides, and desserts. Guests c
 
 ---
 
-## Kids Meal (8 guests)
+## Kids Meal (7 guests)
 
 **Main Course (Choice of):**
 - Chicken tenders with french fries
@@ -197,8 +197,8 @@ All Italian Set meals include the same appetizers, sides, and desserts. Guests c
 | Italian Set - Chicken | 27 |
 | Italian Set - Lamb | 26 |
 | Vegan Mediterranean Tower | 1 |
-| Kids Meal | 8 |
-| **TOTAL** | **96** ✅ |
+| Kids Meal | 7 |
+| **TOTAL** | **95** ✅ |
 
 **All meal selections are now complete!** ✅
 
@@ -208,7 +208,7 @@ All Italian Set meals include the same appetizers, sides, and desserts. Guests c
 
 ## Beverage Options
 
-**Adult Guests (88 + Bride & Groom = 90):**
+**Adult Guests (87 + Bride & Groom = 89):**
 - Red wine: Chianti or Sangiovese
 - White wine: Pinot Grigio or Prosecco
 - Beer: Local Thai beer and Italian import
@@ -216,7 +216,7 @@ All Italian Set meals include the same appetizers, sides, and desserts. Guests c
 - Juice: Orange, Apple, Mango
 - Water: Still and sparkling
 
-**Children (8):**
+**Children (8 - includes 1 child with adult meal):**
 - Juice boxes: Apple, Orange
 - Soft drinks
 - Water
@@ -289,6 +289,6 @@ David & Chanika
 ---
 
 *Document generated: 2026-01-05*
-*Last updated: 2026-01-15*
-*Changes: Marked David's parents (Helga & Klaus) as Not Attending, re-marked P'Note as Attending, marked pending parties (Hannah, Nan Family) as Not Attending, marked Georgie+1 as Not Attending*
-*Final count: 98 people (96 guests + Bride & Groom) - ALL MEAL SELECTIONS COMPLETE ✅*
+*Last updated: 2026-01-19*
+*Changes: Marked Game (Rin Family) as Not Attending*
+*Final count: 97 people (95 guests + Bride & Groom) - ALL MEAL SELECTIONS COMPLETE ✅*

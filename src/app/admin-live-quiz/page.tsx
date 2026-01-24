@@ -152,6 +152,25 @@ export default function AdminLiveQuizPage() {
     }
   }, [state.status, state.currentQuestionIndex])
 
+  // Early reveal when ALL participants have answered
+  useEffect(() => {
+    if (
+      state.status === 'question' &&
+      state.participants.length > 0 &&
+      state.answerCount >= state.participants.length
+    ) {
+      // Clear the timer since everyone answered
+      if (autoRevealTimeoutRef.current) {
+        clearTimeout(autoRevealTimeoutRef.current)
+        autoRevealTimeoutRef.current = null
+      }
+      // Small delay to ensure all answers are recorded, then reveal
+      setTimeout(() => {
+        handleAutoReveal()
+      }, 500)
+    }
+  }, [state.answerCount, state.participants.length, state.status])
+
   const handleLogin = () => {
     if (password === ADMIN_PASSWORD) {
       setIsAuthenticated(true)

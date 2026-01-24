@@ -77,15 +77,18 @@ export function AdminControls({
 
         {state.status === 'question' && (
           <div className="text-center py-4">
-            <p className="text-sm text-deep-blue/60 mb-2">
-              Waiting for timer to expire...
-            </p>
-            <p className="text-lg font-semibold text-deep-blue">
+            <p className="text-lg font-semibold text-deep-blue mb-2">
               {state.answerCount} / {state.participants.length} answered
             </p>
-            <p className="text-xs text-deep-blue/50 mt-2">
-              Answer will auto-reveal when timer ends
-            </p>
+            {state.answerCount >= state.participants.length && state.participants.length > 0 ? (
+              <p className="text-sm text-green-600 font-medium">
+                Everyone answered! Revealing...
+              </p>
+            ) : (
+              <p className="text-xs text-deep-blue/50">
+                Auto-reveals when timer ends or everyone answers
+              </p>
+            )}
           </div>
         )}
 
