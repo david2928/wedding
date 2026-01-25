@@ -349,6 +349,9 @@ export default function AdminSeating2Page() {
     }
   };
 
+  // Table letter to number mapping
+  const TABLE_LETTERS_TO_NUM: Record<string, number> = { 'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5 };
+
   // Load saved assignments from localStorage
   const loadSavedAssignments = useCallback((guests: Guest[]) => {
     try {
@@ -372,6 +375,48 @@ export default function AdminSeating2Page() {
       console.error('Error loading saved assignments:', error);
     }
     return null;
+  }, []);
+
+  // Load assignments from database (guest.table_number field)
+  const loadAssignmentsFromDatabase = useCallback((guests: Guest[]) => {
+    const assignments = new Map<number, (Guest | null)[]>();
+
+    // Initialize empty arrays for all tables
+    for (let i = 1; i <= TOTAL_TABLES; i++) {
+      const config = TABLE_CONFIG[i as keyof typeof TABLE_CONFIG];
+      assignments.set(i, Array(config.seats).fill(null));
+    }
+
+    // Parse each guest's table_number and place them in the correct seat
+    for (const guest of guests) {
+      if (!guest.table_number) continue;
+
+      // Parse format like "A-L5" or "B-R3"
+      const match = guest.table_number.match(/^([A-E])-([LR])(\d+)$/);
+      if (!match) continue;
+
+      const tableLetter = match[1];
+      const side = match[2]; // 'L' or 'R'
+      const seatNum = parseInt(match[3], 10);
+
+      const tableNum = TABLE_LETTERS_TO_NUM[tableLetter];
+      if (!tableNum) continue;
+
+      const config = TABLE_CONFIG[tableNum as keyof typeof TABLE_CONFIG];
+      const seatsPerSide = config.seatsPerSide;
+
+      // Calculate seat index: Left side is 0 to seatsPerSide-1, Right side is seatsPerSide to seats-1
+      const seatIndex = side === 'L' ? seatNum - 1 : seatsPerSide + seatNum - 1;
+
+      if (seatIndex >= 0 && seatIndex < config.seats) {
+        const tableSeats = assignments.get(tableNum);
+        if (tableSeats) {
+          tableSeats[seatIndex] = guest;
+        }
+      }
+    }
+
+    return assignments;
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -399,25 +444,21 @@ export default function AdminSeating2Page() {
       setParties(partiesWithGuests);
       setAllGuests(guestsData || []);
 
-      // Try to load saved assignments, otherwise initialize empty
+      // Try to load saved assignments from localStorage first
       const savedAssignments = loadSavedAssignments(guestsData || []);
       if (savedAssignments) {
         setSeatAssignments(savedAssignments);
       } else {
-        // Initialize empty seat assignments
-        const assignments = new Map<number, (Guest | null)[]>();
-        for (let i = 1; i <= TOTAL_TABLES; i++) {
-          const config = TABLE_CONFIG[i as keyof typeof TABLE_CONFIG];
-          assignments.set(i, Array(config.seats).fill(null));
-        }
-        setSeatAssignments(assignments);
+        // Fall back to loading from database (guest.table_number field)
+        const dbAssignments = loadAssignmentsFromDatabase(guestsData || []);
+        setSeatAssignments(dbAssignments);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
-  }, [loadSavedAssignments]);
+  }, [loadSavedAssignments, loadAssignmentsFromDatabase]);
 
   useEffect(() => {
     if (isAuthenticated) {
