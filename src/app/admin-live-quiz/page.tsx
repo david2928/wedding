@@ -39,6 +39,8 @@ export default function AdminLiveQuizPage() {
   const questionStartTimeRef = useRef<string | null>(null)
   const stateRef = useRef<AdminQuizState | null>(null)
 
+  const [selectedQuestionSet, setSelectedQuestionSet] = useState<'test' | 'production'>('test')
+
   const [state, setState] = useState<AdminQuizState>({
     status: 'idle',
     session: null,
@@ -152,24 +154,7 @@ export default function AdminLiveQuizPage() {
     }
   }, [state.status, state.currentQuestionIndex])
 
-  // Early reveal when ALL participants have answered
-  useEffect(() => {
-    if (
-      state.status === 'question' &&
-      state.participants.length > 0 &&
-      state.answerCount >= state.participants.length
-    ) {
-      // Clear the timer since everyone answered
-      if (autoRevealTimeoutRef.current) {
-        clearTimeout(autoRevealTimeoutRef.current)
-        autoRevealTimeoutRef.current = null
-      }
-      // Small delay to ensure all answers are recorded, then reveal
-      setTimeout(() => {
-        handleAutoReveal()
-      }, 500)
-    }
-  }, [state.answerCount, state.participants.length, state.status])
+  // Note: Removed early reveal - questions now always run for full duration
 
   const handleLogin = () => {
     if (password === ADMIN_PASSWORD) {
@@ -207,11 +192,13 @@ export default function AdminLiveQuizPage() {
     setLoading(false)
   }
 
-  const loadQuestions = async () => {
+  const loadQuestions = async (questionSet?: 'test' | 'production') => {
+    const setToLoad = questionSet || selectedQuestionSet
     const { data } = await supabase
       .from('quiz_questions')
       .select('*')
       .eq('is_active', true)
+      .eq('question_set', setToLoad)
       .order('display_order')
 
     if (data) {
@@ -226,6 +213,7 @@ export default function AdminLiveQuizPage() {
         },
         correctAnswer: q.correct_answer,
         displayOrder: q.display_order,
+        imageUrl: q.image_url || undefined,
       }))
       setState((prev) => ({ ...prev, questions }))
     }
@@ -240,6 +228,7 @@ export default function AdminLiveQuizPage() {
           status: 'waiting',
           current_question_index: 0,
           time_limit_seconds: 30,
+          question_set: selectedQuestionSet,
         })
         .select()
         .single()
@@ -328,6 +317,7 @@ export default function AdminLiveQuizPage() {
           options: firstQuestion.options,
           startedAt: now,
           timeLimitSeconds: TIME_LIMIT_SECONDS,
+          imageUrl: firstQuestion.imageUrl,
         },
       })
     } catch (err) {
@@ -387,6 +377,8 @@ export default function AdminLiveQuizPage() {
         type: 'quiz:reveal',
         payload: {
           questionId: currentQuestion.id,
+          question: currentQuestion.question,
+          index: state.currentQuestionIndex,
           correctAnswer: currentQuestion.correctAnswer,
           stats,
         },
@@ -444,6 +436,8 @@ export default function AdminLiveQuizPage() {
         type: 'quiz:reveal',
         payload: {
           questionId: currentQuestion.id,
+          question: currentQuestion.question,
+          index: state.currentQuestionIndex,
           correctAnswer: currentQuestion.correctAnswer,
           stats,
         },
@@ -519,6 +513,7 @@ export default function AdminLiveQuizPage() {
           options: nextQuestion.options,
           startedAt: now,
           timeLimitSeconds: TIME_LIMIT_SECONDS,
+          imageUrl: nextQuestion.imageUrl,
         },
       })
     } catch (err) {
@@ -658,8 +653,38 @@ export default function AdminLiveQuizPage() {
                   <p className="text-deep-blue/70 mb-4">
                     No active session. Create a new session to start accepting participants.
                   </p>
+
+                  {/* Question Set Selector */}
+                  <div className="mb-4">
+                    <Label className="text-sm text-deep-blue/70 mb-2 block">Question Set</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={selectedQuestionSet === 'test' ? 'default' : 'outline'}
+                        onClick={() => {
+                          setSelectedQuestionSet('test')
+                          loadQuestions('test')
+                        }}
+                        className={selectedQuestionSet === 'test' ? 'bg-ocean-blue hover:bg-navy-blue' : ''}
+                      >
+                        Test
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={selectedQuestionSet === 'production' ? 'default' : 'outline'}
+                        onClick={() => {
+                          setSelectedQuestionSet('production')
+                          loadQuestions('production')
+                        }}
+                        className={selectedQuestionSet === 'production' ? 'bg-ocean-blue hover:bg-navy-blue' : ''}
+                      >
+                        Big Night
+                      </Button>
+                    </div>
+                  </div>
+
                   <p className="text-sm text-deep-blue/60 mb-4">
-                    {state.questions.length} questions loaded
+                    {state.questions.length} questions loaded ({selectedQuestionSet})
                   </p>
                   <Button
                     onClick={handleCreateSession}

@@ -18,6 +18,7 @@ export interface QuestionWithOptions {
   }
   correctAnswer: string
   displayOrder: number
+  imageUrl?: string
 }
 
 export interface ParticipantRanking {
@@ -66,10 +67,13 @@ export interface QuizQuestionPayload {
   }
   startedAt: string
   timeLimitSeconds: number
+  imageUrl?: string
 }
 
 export interface QuizRevealPayload {
   questionId: string
+  question: string
+  index: number
   correctAnswer: string
   stats: AnswerStats
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import HeroWelcome from '@/components/big-day/HeroWelcome'
 import QuickLinks from '@/components/big-day/QuickLinks'
@@ -12,6 +12,7 @@ import { GuestGate } from '@/components/GuestGate'
 import { isDevModeEnabled, enableDevMode } from '@/lib/utils/devMode'
 import { supabase } from '@/lib/supabase/client'
 import type { Tables } from '@/lib/supabase/types'
+import { useRouter } from 'next/navigation'
 
 type Party = Tables<'parties'>
 type Guest = Tables<'guests'>
@@ -175,12 +176,67 @@ interface BigDayContentProps {
 }
 
 function BigDayContent({ partyId, partyName, isWalkIn = false, forceUnlock = false }: BigDayContentProps) {
+  const router = useRouter()
+  const [quizSessionActive, setQuizSessionActive] = useState(false)
+
+  useEffect(() => {
+    // Check for active quiz session
+    const checkQuizSession = async () => {
+      const { data } = await supabase
+        .from('live_quiz_sessions')
+        .select('id')
+        .in('status', ['waiting', 'active', 'showing_question', 'showing_answer'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      setQuizSessionActive(!!data)
+    }
+
+    checkQuizSession()
+
+    // Subscribe to session changes
+    const channel = supabase
+      .channel('big-day-quiz-check')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'live_quiz_sessions' },
+        () => checkQuizSession()
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
   return (
     <div
       className="min-h-screen py-8 px-4"
       style={{ backgroundColor: '#fcf6eb' }}
     >
       <div className="max-w-5xl mx-auto">
+        {/* Live Quiz Banner */}
+        {quizSessionActive && (
+          <div className="mb-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl p-4 shadow-lg animate-pulse">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3 text-white">
+                <Trophy className="w-8 h-8" />
+                <div>
+                  <h3 className="font-bold text-lg">Quiz is Live!</h3>
+                  <p className="text-white/90 text-sm">Join now to win prizes</p>
+                </div>
+              </div>
+              <button
+                onClick={() => router.push('/quiz')}
+                className="px-6 py-2 bg-white text-orange-600 font-semibold rounded-lg hover:bg-orange-50 transition-colors shadow"
+              >
+                Join Quiz
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-8">
           <img

@@ -323,22 +323,20 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
 
           <div className="flex justify-center">
             {quizSessionActive ? (
-              <Button
+              <button
                 onClick={handleQuizClick}
-                size="lg"
-                className="px-8 py-6 text-lg font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg"
+                className="inline-flex items-center px-8 py-4 text-lg font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg rounded-lg transition-all"
               >
                 <Trophy className="w-5 h-5 mr-2" />
                 Join Quiz
-              </Button>
+              </button>
             ) : devMode ? (
-              <Button
+              <button
                 onClick={handleQuizClick}
-                size="lg"
-                className="px-6 py-5 text-base font-medium bg-orange-400 hover:bg-orange-500 text-white"
+                className="inline-flex items-center px-6 py-3 text-base font-medium bg-orange-400 hover:bg-orange-500 text-white rounded-lg transition-colors"
               >
                 Join Quiz (Dev)
-              </Button>
+              </button>
             ) : (
               <Button
                 disabled

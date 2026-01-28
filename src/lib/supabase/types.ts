@@ -409,6 +409,7 @@ export type Database = {
           current_question_index: number | null
           ended_at: string | null
           id: string
+          question_set: string | null
           question_started_at: string | null
           started_at: string | null
           status: string
@@ -420,6 +421,7 @@ export type Database = {
           current_question_index?: number | null
           ended_at?: string | null
           id?: string
+          question_set?: string | null
           question_started_at?: string | null
           started_at?: string | null
           status?: string
@@ -431,6 +433,7 @@ export type Database = {
           current_question_index?: number | null
           ended_at?: string | null
           id?: string
+          question_set?: string | null
           question_started_at?: string | null
           started_at?: string | null
           status?: string
@@ -548,6 +551,7 @@ export type Database = {
           created_at: string | null
           display_order: number
           id: string
+          image_url: string | null
           is_active: boolean | null
           option_a: string
           option_b: string
@@ -555,12 +559,14 @@ export type Database = {
           option_d: string
           points: number | null
           question: string
+          question_set: string | null
         }
         Insert: {
           correct_answer: string
           created_at?: string | null
           display_order: number
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           option_a: string
           option_b: string
@@ -568,12 +574,14 @@ export type Database = {
           option_d: string
           points?: number | null
           question: string
+          question_set?: string | null
         }
         Update: {
           correct_answer?: string
           created_at?: string | null
           display_order?: number
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           option_a?: string
           option_b?: string
@@ -581,6 +589,7 @@ export type Database = {
           option_d?: string
           points?: number | null
           question?: string
+          question_set?: string | null
         }
         Relationships: []
       }

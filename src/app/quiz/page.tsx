@@ -535,6 +535,17 @@ export default function QuizPage() {
           {/* Question Card */}
           <Card className="mb-6">
             <CardContent className="p-6 md:p-8">
+              {/* Question Image */}
+              {state.currentQuestion.imageUrl && (
+                <div className="mb-6">
+                  <img
+                    src={state.currentQuestion.imageUrl}
+                    alt="Question image"
+                    className="w-full max-h-64 object-contain rounded-lg"
+                  />
+                </div>
+              )}
+
               <h2 className="text-xl md:text-2xl font-semibold text-deep-blue mb-6">
                 {state.currentQuestion.question}
               </h2>
@@ -595,6 +606,16 @@ export default function QuizPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-soft-white to-pale-blue/30 py-8 px-4">
         <div className="max-w-2xl mx-auto">
+          {/* Question Recap - shown when user didn't answer */}
+          {!didAnswer && state.revealData.question && (
+            <Card className="mb-4 bg-gray-50 border-gray-200">
+              <CardContent className="p-4">
+                <p className="text-sm text-deep-blue/60 mb-1">Question {state.revealData.index + 1}:</p>
+                <p className="text-deep-blue font-medium">{state.revealData.question}</p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Result Card */}
           <Card className="mb-6">
             <CardContent className="p-8 text-center">
@@ -616,6 +637,11 @@ export default function QuizPage() {
               <h2 className="font-dancing text-4xl italic mb-2" style={{ color: isCorrect ? '#0284c7' : didAnswer ? '#b91c1c' : '#6b7280' }}>
                 {isCorrect ? 'Correct!' : didAnswer ? 'Oops!' : "Time's up!"}
               </h2>
+              {!didAnswer && (
+                <p className="text-deep-blue/70 text-lg">
+                  The correct answer was <span className="font-bold text-ocean-blue">{state.revealData.correctAnswer}</span>
+                </p>
+              )}
               {didAnswer && !isCorrect && (
                 <p className="text-deep-blue/70 text-lg">
                   The correct answer was <span className="font-bold text-ocean-blue">{state.revealData.correctAnswer}</span>
