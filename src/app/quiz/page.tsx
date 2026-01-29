@@ -16,6 +16,7 @@ import type {
   GuestQuizState,
   LiveQuizEvent,
   ParticipantRanking,
+  QuizQuestionPayload,
 } from '@/lib/live-quiz/types'
 
 type Party = Tables<'parties'>
@@ -217,8 +218,12 @@ export default function QuizPage() {
       .eq('party_id', partyData.id)
       .maybeSingle()
 
+    let participantScore = 0
+    let participantHasBonus = hasGamesBonus || false
+
     if (!existingParticipant) {
       const startingScore = hasGamesBonus ? GAMES_COMPLETION_BONUS : 0
+      participantScore = startingScore
 
       await supabase.from('live_quiz_participants').insert({
         session_id: session.id,
@@ -240,23 +245,86 @@ export default function QuizPage() {
           partyName: partyData.name,
         },
       })
-
-      setState((prev) => ({
-        ...prev,
-        sessionId: session.id,
-        status: session.status === 'waiting' ? 'waiting' : 'question',
-        totalScore: startingScore,
-        hasGamesBonus: hasGamesBonus || false,
-      }))
     } else {
-      setState((prev) => ({
-        ...prev,
-        sessionId: session.id,
-        status: session.status === 'waiting' ? 'waiting' : 'question',
-        totalScore: existingParticipant.total_score || 0,
-        hasGamesBonus: existingParticipant.has_games_bonus || false,
-      }))
+      participantScore = existingParticipant.total_score || 0
+      participantHasBonus = existingParticipant.has_games_bonus || false
     }
+
+    // Recovery: If session is actively showing a question, recover the current state
+    if (session.status === 'active' && session.current_question_id && session.question_started_at) {
+      // Fetch the current question
+      const { data: questionData } = await supabase
+        .from('quiz_questions')
+        .select('*')
+        .eq('id', session.current_question_id)
+        .single()
+
+      if (questionData) {
+        // Check if user already answered this question
+        const { data: existingAnswer } = await supabase
+          .from('live_quiz_answers')
+          .select('*')
+          .eq('session_id', session.id)
+          .eq('question_id', session.current_question_id)
+          .eq('party_id', partyData.id)
+          .maybeSingle()
+
+        const currentQuestion: QuizQuestionPayload = {
+          index: session.current_question_index || 0,
+          questionId: questionData.id,
+          question: questionData.question,
+          options: {
+            A: questionData.option_a,
+            B: questionData.option_b,
+            C: questionData.option_c,
+            D: questionData.option_d,
+          },
+          startedAt: session.question_started_at,
+          timeLimitSeconds: session.time_limit_seconds || 30,
+          imageUrl: questionData.image_url || undefined,
+        }
+
+        if (existingAnswer) {
+          // User already answered - show answered state
+          setState((prev) => ({
+            ...prev,
+            sessionId: session.id,
+            status: 'answered',
+            currentQuestion,
+            selectedAnswer: existingAnswer.answer,
+            totalScore: participantScore,
+            hasGamesBonus: participantHasBonus,
+          }))
+        } else {
+          // User hasn't answered yet - show question
+          setState((prev) => ({
+            ...prev,
+            sessionId: session.id,
+            status: 'question',
+            currentQuestion,
+            totalScore: participantScore,
+            hasGamesBonus: participantHasBonus,
+          }))
+        }
+
+        const { count } = await supabase
+          .from('live_quiz_participants')
+          .select('*', { count: 'exact', head: true })
+          .eq('session_id', session.id)
+
+        setParticipantCount(count || 0)
+        return
+      }
+    }
+
+    // Default state for waiting or other statuses
+    setState((prev) => ({
+      ...prev,
+      sessionId: session.id,
+      status: session.status === 'waiting' ? 'waiting' : 'question',
+      totalScore: participantScore,
+      hasGamesBonus: participantHasBonus,
+    }))
 
     const { count } = await supabase
       .from('live_quiz_participants')
@@ -606,12 +674,32 @@ export default function QuizPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-soft-white to-pale-blue/30 py-8 px-4">
         <div className="max-w-2xl mx-auto">
-          {/* Question Recap - shown when user didn't answer */}
-          {!didAnswer && state.revealData.question && (
+          {/* Question + Answers Recap */}
+          {state.revealData.question && (
             <Card className="mb-4 bg-gray-50 border-gray-200">
               <CardContent className="p-4">
-                <p className="text-sm text-deep-blue/60 mb-1">Question {state.revealData.index + 1}:</p>
-                <p className="text-deep-blue font-medium">{state.revealData.question}</p>
+                <p className="text-sm text-deep-blue/60 mb-2">Question {state.revealData.index + 1}:</p>
+                <p className="text-deep-blue font-semibold mb-3">{state.revealData.question}</p>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {(['A', 'B', 'C', 'D'] as const).map((opt) => {
+                    const isCorrect = opt === state.revealData!.correctAnswer
+                    const isUserAnswer = opt === state.selectedAnswer
+                    return (
+                      <div
+                        key={opt}
+                        className={`p-2 rounded-lg border ${
+                          isCorrect
+                            ? 'bg-green-50 border-green-300 text-green-800'
+                            : isUserAnswer && !isCorrect
+                            ? 'bg-red-50 border-red-300 text-red-800'
+                            : 'bg-white border-gray-200 text-deep-blue/70'
+                        }`}
+                      >
+                        <span className="font-bold">{opt}.</span> {state.revealData!.options[opt]}
+                      </div>
+                    )
+                  })}
+                </div>
               </CardContent>
             </Card>
           )}
@@ -821,9 +909,9 @@ export default function QuizPage() {
                 <div className="flex items-end justify-center gap-4 mb-4">
                   {/* 2nd Place */}
                   {topThree[1] && (
-                    <div className="flex flex-col items-center flex-1 max-w-[100px]">
+                    <div className="flex flex-col items-center flex-1 max-w-[110px]">
                       <Trophy className="w-8 h-8 text-gray-400 mb-2" />
-                      <p className="font-semibold text-deep-blue text-center text-sm truncate w-full">
+                      <p className="font-semibold text-deep-blue text-center text-xs leading-tight h-8 flex items-center justify-center">
                         {topThree[1].partyName}
                       </p>
                       <p className="text-lg font-bold text-gray-600">{topThree[1].totalScore}</p>
@@ -835,9 +923,9 @@ export default function QuizPage() {
 
                   {/* 1st Place */}
                   {topThree[0] && (
-                    <div className="flex flex-col items-center flex-1 max-w-[120px]">
+                    <div className="flex flex-col items-center flex-1 max-w-[130px]">
                       <Trophy className="w-10 h-10 text-yellow-500 mb-2" />
-                      <p className="font-semibold text-deep-blue text-center truncate w-full">
+                      <p className="font-semibold text-deep-blue text-center text-sm leading-tight h-10 flex items-center justify-center">
                         {topThree[0].partyName}
                       </p>
                       <p className="text-xl font-bold text-yellow-600">{topThree[0].totalScore}</p>
@@ -849,9 +937,9 @@ export default function QuizPage() {
 
                   {/* 3rd Place */}
                   {topThree[2] && (
-                    <div className="flex flex-col items-center flex-1 max-w-[100px]">
+                    <div className="flex flex-col items-center flex-1 max-w-[110px]">
                       <Trophy className="w-8 h-8 text-orange-400 mb-2" />
-                      <p className="font-semibold text-deep-blue text-center text-sm truncate w-full">
+                      <p className="font-semibold text-deep-blue text-center text-xs leading-tight h-8 flex items-center justify-center">
                         {topThree[2].partyName}
                       </p>
                       <p className="text-lg font-bold text-orange-500">{topThree[2].totalScore}</p>

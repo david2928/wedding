@@ -74,6 +74,12 @@ export interface QuizRevealPayload {
   questionId: string
   question: string
   index: number
+  options: {
+    A: string
+    B: string
+    C: string
+    D: string
+  }
   correctAnswer: string
   stats: AnswerStats
 }

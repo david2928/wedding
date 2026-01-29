@@ -218,21 +218,23 @@ function BigDayContent({ partyId, partyName, isWalkIn = false, forceUnlock = fal
       <div className="max-w-5xl mx-auto">
         {/* Live Quiz Banner */}
         {quizSessionActive && (
-          <div className="mb-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl p-4 shadow-lg animate-pulse">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-3 text-white">
-                <Trophy className="w-8 h-8" />
-                <div>
-                  <h3 className="font-bold text-lg">Quiz is Live!</h3>
-                  <p className="text-white/90 text-sm">Join now to win prizes</p>
+          <div className="mb-6 rounded-2xl shadow-lg overflow-hidden" style={{ backgroundColor: '#FDFBF7', border: '2px solid #0ea5e9' }}>
+            <div className="bg-gradient-to-r from-ocean-blue to-sky-blue p-4">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-3 text-white">
+                  <Trophy className="w-8 h-8" />
+                  <div>
+                    <h3 className="font-crimson text-xl italic">Quiz is Live!</h3>
+                    <p className="text-white/90 text-sm">Join now to win prizes</p>
+                  </div>
                 </div>
+                <button
+                  onClick={() => router.push('/quiz')}
+                  className="px-6 py-2 bg-white text-ocean-blue font-semibold rounded-lg hover:bg-sky-50 transition-colors shadow"
+                >
+                  Join Quiz
+                </button>
               </div>
-              <button
-                onClick={() => router.push('/quiz')}
-                className="px-6 py-2 bg-white text-orange-600 font-semibold rounded-lg hover:bg-orange-50 transition-colors shadow"
-              >
-                Join Quiz
-              </button>
             </div>
           </div>
         )}

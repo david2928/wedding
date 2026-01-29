@@ -233,6 +233,43 @@ export default function PortraitUploadPage() {
     }
   }
 
+  const handleMarkInProgress = async () => {
+    if (!party) return
+
+    try {
+      setUploading(true)
+      setError(null)
+
+      // Mark game as complete without photo (notes indicate pictures coming later)
+      const { error: insertError } = await supabase
+        .from('game_completions')
+        .insert({
+          party_id: party.id,
+          station_id: 'portrait',
+          completed_by_google_id: user?.id || 'dev-mode-user',
+          notes: 'Pictures still in progress - to be received later'
+        })
+
+      if (insertError) {
+        if (insertError.code === '23505') {
+          // Already completed
+          setAlreadyCompleted(true)
+        } else {
+          throw insertError
+        }
+      } else {
+        setAlreadyCompleted(true)
+        setUploadedPhotoUrl(null) // No photo uploaded
+      }
+
+      setUploading(false)
+    } catch (err: any) {
+      console.error('Error marking as in progress:', err)
+      setError(err.message || 'Failed to mark as complete. Please try again.')
+      setUploading(false)
+    }
+  }
+
   // Loading state
   if (loading) {
     return (
@@ -295,26 +332,32 @@ export default function PortraitUploadPage() {
   }
 
   // Already completed
-  if (alreadyCompleted && uploadedPhotoUrl) {
+  if (alreadyCompleted) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#fcf6eb' }}>
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full text-center" style={{ border: '2px solid #86efac' }}>
           <div className="bg-green-100 rounded-full p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
             <Check className="w-12 h-12 text-green-600" />
           </div>
-          <h1 className="text-3xl font-bold text-deep-blue mb-2">Photo Uploaded!</h1>
+          <h1 className="text-3xl font-bold text-deep-blue mb-2">
+            {uploadedPhotoUrl ? 'Photo Uploaded!' : 'Game Completed!'}
+          </h1>
           <p className="text-deep-blue/70 mb-6">
-            Your beautiful portrait photo has been saved.
+            {uploadedPhotoUrl
+              ? 'Your beautiful portrait photo has been saved.'
+              : 'You can upload your portrait photo later when you receive it.'}
           </p>
 
-          {/* Show uploaded photo */}
-          <div className="mb-6">
-            <img
-              src={uploadedPhotoUrl}
-              alt="Uploaded portrait"
-              className="w-full h-64 object-cover rounded-lg shadow-lg"
-            />
-          </div>
+          {/* Show uploaded photo if available */}
+          {uploadedPhotoUrl && (
+            <div className="mb-6">
+              <img
+                src={uploadedPhotoUrl}
+                alt="Uploaded portrait"
+                className="w-full h-64 object-cover rounded-lg shadow-lg"
+              />
+            </div>
+          )}
 
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
             <p className="text-green-700 text-sm">
@@ -433,6 +476,21 @@ export default function PortraitUploadPage() {
                     Upload Photo
                   </>
                 )}
+              </Button>
+            </div>
+
+            {/* Pictures in progress option */}
+            <div className="border-t pt-4 mt-2">
+              <p className="text-sm text-deep-blue/60 text-center mb-3">
+                Don't have the picture yet?
+              </p>
+              <Button
+                onClick={handleMarkInProgress}
+                variant="outline"
+                disabled={uploading}
+                className="w-full border-gray-300 text-deep-blue/70 hover:bg-gray-50"
+              >
+                Mark as Complete (Pictures Coming Later)
               </Button>
             </div>
           </div>
