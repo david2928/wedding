@@ -1025,21 +1025,14 @@ export default function QuizPage() {
 
           {/* Full Leaderboard */}
           <div className="rounded-2xl shadow-lg overflow-hidden" style={{ backgroundColor: '#FDFBF7', border: '2px solid #eee0d2' }}>
-            <div className="p-4">
-              <h2 className="font-semibold text-deep-blue text-lg mb-4">Full Leaderboard</h2>
-              <LeaderboardList rankings={state.rankings} previousRankings={previousRankingsRef.current} currentPartyId={party.id} maxItems={20} animate={true} />
+            <div className="bg-gradient-to-r from-yellow-400 to-orange-400 px-4 py-3">
+              <h2 className="font-semibold text-white text-lg">Full Leaderboard</h2>
+            </div>
+            <div className="p-4 max-h-[400px] overflow-y-auto">
+              <LeaderboardList rankings={state.rankings} previousRankings={previousRankingsRef.current} currentPartyId={party.id} maxItems={999} animate={true} />
             </div>
           </div>
 
-          {/* Back to Games */}
-          <div className="mt-6">
-            <Button
-              onClick={() => router.push('/games')}
-              className="w-full bg-ocean-blue hover:bg-navy-blue"
-            >
-              Back to Games
-            </Button>
-          </div>
         </div>
       </div>
     )
@@ -1134,6 +1127,99 @@ function AnimatedScore({ value, fromValue, className }: { value: number; fromVal
   return <span className={className}>{displayValue}</span>
 }
 
+// Leaderboard item component with position animation
+function LeaderboardItem({
+  entry,
+  index,
+  previousIndex,
+  previousScore,
+  isCurrentUser,
+  animate,
+  animationKey,
+}: {
+  entry: ParticipantRanking
+  index: number
+  previousIndex: number
+  previousScore: number
+  isCurrentUser: boolean
+  animate: boolean
+  animationKey: number
+}) {
+  const initialOffset = animate ? (previousIndex - index) * 52 : 0 // 52px = item height + gap
+  const [offset, setOffset] = useState(initialOffset)
+
+  useEffect(() => {
+    if (!animate) return
+
+    // Set initial offset (start at previous position)
+    setOffset((previousIndex - index) * 52)
+
+    // Animate to final position after a brief delay
+    const timer = setTimeout(() => setOffset(0), 100)
+    return () => clearTimeout(timer)
+  }, [animationKey]) // Only re-run when animationKey changes (new leaderboard data)
+
+  const scoreColorClass = isCurrentUser
+    ? 'text-ocean-blue'
+    : entry.rank === 1
+    ? 'text-yellow-600'
+    : entry.rank === 2
+    ? 'text-gray-600'
+    : entry.rank === 3
+    ? 'text-orange-500'
+    : 'text-deep-blue'
+
+  return (
+    <div
+      className={`rounded-lg p-3 transition-all duration-700 ease-out ${
+        isCurrentUser
+          ? 'bg-ocean-blue/10 border-2 border-ocean-blue'
+          : entry.rank === 1
+          ? 'bg-yellow-50 border-2 border-yellow-300'
+          : entry.rank === 2
+          ? 'bg-gray-50 border-2 border-gray-300'
+          : entry.rank === 3
+          ? 'bg-orange-50 border-2 border-orange-300'
+          : 'bg-gray-50 border border-gray-200'
+      }`}
+      style={{ transform: `translateY(${offset}px)` }}
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-8 flex-shrink-0 text-center">
+          {entry.rank <= 3 ? (
+            <Trophy
+              className={`w-5 h-5 mx-auto ${
+                entry.rank === 1 ? 'text-yellow-500' : entry.rank === 2 ? 'text-gray-400' : 'text-orange-400'
+              }`}
+            />
+          ) : (
+            <span className="text-deep-blue/50 font-bold">#{entry.rank}</span>
+          )}
+        </div>
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <p className={`font-semibold truncate ${isCurrentUser ? 'text-ocean-blue' : 'text-deep-blue'}`}>
+            {entry.partyName}
+            {isCurrentUser && ' (You)'}
+          </p>
+        </div>
+        <div className="flex-shrink-0 ml-2">
+          {animate ? (
+            <AnimatedScore
+              value={entry.totalScore}
+              fromValue={previousScore}
+              className={`text-lg font-bold ${scoreColorClass}`}
+            />
+          ) : (
+            <span className={`text-lg font-bold ${scoreColorClass}`}>
+              {entry.totalScore}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Leaderboard component
 function LeaderboardList({
   rankings,
@@ -1150,8 +1236,12 @@ function LeaderboardList({
 }) {
   const displayRankings = rankings.slice(0, maxItems)
 
-  // Create a map of previous scores for quick lookup
+  // Generate a key that changes when rankings change (triggers animation)
+  const animationKey = rankings.map(r => `${r.partyId}:${r.totalScore}`).join(',').length + rankings.reduce((sum, r) => sum + r.totalScore, 0)
+
+  // Create maps for quick lookup
   const previousScoreMap = new Map(previousRankings.map(r => [r.partyId, r.totalScore]))
+  const previousIndexMap = new Map(previousRankings.slice(0, maxItems).map((r, i) => [r.partyId, i]))
 
   if (rankings.length === 0) {
     return <div className="text-center py-8 text-deep-blue/60">No participants yet</div>
@@ -1159,67 +1249,22 @@ function LeaderboardList({
 
   return (
     <div className="space-y-2">
-      {displayRankings.map((entry) => {
+      {displayRankings.map((entry, index) => {
         const isCurrentUser = entry.partyId === currentPartyId
         const previousScore = previousScoreMap.get(entry.partyId) ?? 0
-        const scoreColorClass = isCurrentUser
-          ? 'text-ocean-blue'
-          : entry.rank === 1
-          ? 'text-yellow-600'
-          : entry.rank === 2
-          ? 'text-gray-600'
-          : entry.rank === 3
-          ? 'text-orange-500'
-          : 'text-deep-blue'
+        const previousIndex = previousIndexMap.get(entry.partyId) ?? index
 
         return (
-          <div
+          <LeaderboardItem
             key={entry.partyId}
-            className={`rounded-lg p-3 transition-all duration-500 ${
-              isCurrentUser
-                ? 'bg-ocean-blue/10 border-2 border-ocean-blue'
-                : entry.rank === 1
-                ? 'bg-yellow-50 border-2 border-yellow-300'
-                : entry.rank === 2
-                ? 'bg-gray-50 border-2 border-gray-300'
-                : entry.rank === 3
-                ? 'bg-orange-50 border-2 border-orange-300'
-                : 'bg-gray-50 border border-gray-200'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 flex-shrink-0 text-center">
-                {entry.rank <= 3 ? (
-                  <Trophy
-                    className={`w-5 h-5 mx-auto ${
-                      entry.rank === 1 ? 'text-yellow-500' : entry.rank === 2 ? 'text-gray-400' : 'text-orange-400'
-                    }`}
-                  />
-                ) : (
-                  <span className="text-deep-blue/50 font-bold">#{entry.rank}</span>
-                )}
-              </div>
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <p className={`font-semibold truncate ${isCurrentUser ? 'text-ocean-blue' : 'text-deep-blue'}`}>
-                  {entry.partyName}
-                  {isCurrentUser && ' (You)'}
-                </p>
-              </div>
-              <div className="flex-shrink-0 ml-2">
-                {animate ? (
-                  <AnimatedScore
-                    value={entry.totalScore}
-                    fromValue={previousScore}
-                    className={`text-lg font-bold ${scoreColorClass}`}
-                  />
-                ) : (
-                  <span className={`text-lg font-bold ${scoreColorClass}`}>
-                    {entry.totalScore}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
+            entry={entry}
+            index={index}
+            previousIndex={previousIndex}
+            previousScore={previousScore}
+            isCurrentUser={isCurrentUser}
+            animate={animate}
+            animationKey={animationKey}
+          />
         )
       })}
 
