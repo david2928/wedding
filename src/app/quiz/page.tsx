@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Loader2, Trophy, Users, Clock, Check, X, Award } from 'lucide-react'
 import { useLiveQuizChannel } from '@/hooks/useLiveQuizChannel'
 import { calculatePoints, GAMES_COMPLETION_BONUS } from '@/lib/live-quiz/scoring'
@@ -32,6 +31,7 @@ export default function QuizPage() {
 
   const questionStartTimeRef = useRef<number | null>(null)
   const timeTakenMsRef = useRef<number>(0)
+  const previousRankingsRef = useRef<ParticipantRanking[]>([])
 
   const [state, setState] = useState<GuestQuizState>({
     status: 'connecting',
@@ -83,19 +83,25 @@ export default function QuizPage() {
           break
 
         case 'quiz:leaderboard':
-          setState((prev) => ({
-            ...prev,
-            status: 'leaderboard',
-            rankings: event.payload.rankings,
-          }))
+          setState((prev) => {
+            previousRankingsRef.current = prev.rankings
+            return {
+              ...prev,
+              status: 'leaderboard',
+              rankings: event.payload.rankings,
+            }
+          })
           break
 
         case 'quiz:ended':
-          setState((prev) => ({
-            ...prev,
-            status: 'ended',
-            rankings: event.payload.winners,
-          }))
+          setState((prev) => {
+            previousRankingsRef.current = prev.rankings
+            return {
+              ...prev,
+              status: 'ended',
+              rankings: event.payload.winners,
+            }
+          })
           loadFinalRankings()
           break
 
@@ -284,19 +290,25 @@ export default function QuizPage() {
           imageUrl: questionData.image_url || undefined,
         }
 
-        if (existingAnswer) {
-          // User already answered - show answered state
+        // Check if timer has already expired
+        const startTime = new Date(session.question_started_at).getTime()
+        const timeLimitMs = (session.time_limit_seconds || 30) * 1000
+        const now = Date.now()
+        const timerExpired = now > startTime + timeLimitMs
+
+        if (existingAnswer || timerExpired) {
+          // User already answered OR timer expired - show answered/waiting state
           setState((prev) => ({
             ...prev,
             sessionId: session.id,
             status: 'answered',
             currentQuestion,
-            selectedAnswer: existingAnswer.answer,
+            selectedAnswer: existingAnswer?.answer || null,
             totalScore: participantScore,
             hasGamesBonus: participantHasBonus,
           }))
         } else {
-          // User hasn't answered yet - show question
+          // User hasn't answered yet and timer still running - show question
           setState((prev) => ({
             ...prev,
             sessionId: session.id,
@@ -306,6 +318,76 @@ export default function QuizPage() {
             hasGamesBonus: participantHasBonus,
           }))
         }
+
+        const { count } = await supabase
+          .from('live_quiz_participants')
+          .select('*', { count: 'exact', head: true })
+          .eq('session_id', session.id)
+
+        setParticipantCount(count || 0)
+        return
+      }
+    }
+
+    // Recovery: If session is showing answer, recover the reveal state
+    if (session.status === 'showing_answer' && session.current_question_id) {
+      // Fetch the current question
+      const { data: questionData } = await supabase
+        .from('quiz_questions')
+        .select('*')
+        .eq('id', session.current_question_id)
+        .single()
+
+      if (questionData) {
+        // Check if user answered this question
+        const { data: existingAnswer } = await supabase
+          .from('live_quiz_answers')
+          .select('*')
+          .eq('session_id', session.id)
+          .eq('question_id', session.current_question_id)
+          .eq('party_id', partyData.id)
+          .maybeSingle()
+
+        // Get answer stats
+        const { data: allAnswers } = await supabase
+          .from('live_quiz_answers')
+          .select('*')
+          .eq('session_id', session.id)
+          .eq('question_id', session.current_question_id)
+
+        const stats = {
+          total: allAnswers?.length || 0,
+          A: allAnswers?.filter((a) => a.answer === 'A').length || 0,
+          B: allAnswers?.filter((a) => a.answer === 'B').length || 0,
+          C: allAnswers?.filter((a) => a.answer === 'C').length || 0,
+          D: allAnswers?.filter((a) => a.answer === 'D').length || 0,
+          correctCount: allAnswers?.filter((a) => a.is_correct).length || 0,
+          averageTimeMs: allAnswers && allAnswers.length > 0
+            ? allAnswers.reduce((sum, a) => sum + (a.time_taken_ms || 0), 0) / allAnswers.length
+            : 0,
+        }
+
+        setState((prev) => ({
+          ...prev,
+          sessionId: session.id,
+          status: 'reveal',
+          selectedAnswer: existingAnswer?.answer || null,
+          totalScore: participantScore,
+          hasGamesBonus: participantHasBonus,
+          revealData: {
+            questionId: questionData.id,
+            question: questionData.question,
+            index: session.current_question_index || 0,
+            options: {
+              A: questionData.option_a,
+              B: questionData.option_b,
+              C: questionData.option_c,
+              D: questionData.option_d,
+            },
+            correctAnswer: questionData.correct_answer,
+            stats,
+          },
+        }))
 
         const { count } = await supabase
           .from('live_quiz_participants')
@@ -450,7 +532,7 @@ export default function QuizPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-soft-white to-pale-blue/30 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#fcf6eb' }}>
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-ocean-blue mx-auto mb-4" />
           <p className="text-deep-blue/70">Connecting to quiz...</p>
@@ -462,8 +544,8 @@ export default function QuizPage() {
   // Not authenticated
   if (!user && !devMode) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-soft-white to-pale-blue/30 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-md w-full">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#fcf6eb' }}>
+        <div className="rounded-2xl shadow-xl overflow-hidden max-w-md w-full" style={{ backgroundColor: '#FDFBF7' }}>
           <div className="bg-gradient-to-r from-ocean-blue to-sky-blue p-8 text-white text-center">
             <Trophy className="w-16 h-16 mx-auto mb-4" />
             <h1 className="font-dancing text-4xl italic mb-2">Live Quiz</h1>
@@ -494,8 +576,8 @@ export default function QuizPage() {
   // No party found
   if (!party) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-soft-white to-pale-blue/30 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md text-center">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#fcf6eb' }}>
+        <div className="rounded-2xl shadow-xl p-8 max-w-md text-center" style={{ backgroundColor: '#FDFBF7', border: '2px solid #eee0d2' }}>
           <h1 className="text-2xl font-bold text-deep-blue mb-2">Party Not Found</h1>
           <p className="text-deep-blue/70 mb-6">
             We couldn&apos;t find your party information. Please make sure you&apos;ve RSVP&apos;d first.
@@ -511,8 +593,8 @@ export default function QuizPage() {
   // No active session - waiting for host
   if (!state.sessionId) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-soft-white to-pale-blue/30 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md text-center">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#fcf6eb' }}>
+        <div className="rounded-2xl shadow-xl p-8 max-w-md text-center" style={{ backgroundColor: '#FDFBF7', border: '2px solid #eee0d2' }}>
           <Trophy className="w-16 h-16 text-ocean-blue mx-auto mb-4" />
           <h1 className="font-dancing text-4xl italic text-ocean-blue mb-4">Live Quiz</h1>
           <p className="text-deep-blue/70 mb-6">
@@ -533,13 +615,13 @@ export default function QuizPage() {
   // Waiting room
   if (state.status === 'waiting' || state.status === 'connecting') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-soft-white to-pale-blue/30 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#fcf6eb' }}>
+        <div className="rounded-2xl shadow-xl p-8 max-w-md w-full text-center" style={{ backgroundColor: '#FDFBF7', border: '2px solid #eee0d2' }}>
           <Trophy className="w-16 h-16 text-ocean-blue mx-auto mb-4" />
           <h1 className="font-dancing text-4xl italic text-ocean-blue mb-2">Live Quiz</h1>
           <p className="text-deep-blue/70 mb-6">Waiting for the host to start...</p>
 
-          <div className="bg-gray-50 rounded-xl p-4 mb-6">
+          <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: '#fcf6eb' }}>
             <p className="text-sm text-deep-blue/60 mb-1">Playing as</p>
             <p className="font-semibold text-deep-blue text-lg">{party.name}</p>
             {state.hasGamesBonus && (
@@ -564,61 +646,56 @@ export default function QuizPage() {
     )
   }
 
-  // Question view
+  // Question view - Compact mobile-first design
   if (state.status === 'question' || state.status === 'answered') {
     if (!state.currentQuestion) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-soft-white to-pale-blue/30 flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#fcf6eb' }}>
           <Loader2 className="w-12 h-12 animate-spin text-ocean-blue" />
         </div>
       )
     }
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-soft-white to-pale-blue/30 py-8 px-4">
-        <div className="max-w-3xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-6">
-            <h1 className="font-dancing text-4xl md:text-5xl italic text-ocean-blue mb-2">
-              Live Quiz
-            </h1>
-          </div>
-
-          {/* Progress & Timer */}
-          <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-deep-blue/70">
-                Question {state.currentQuestion.index + 1}
-              </span>
+      <div className="min-h-screen py-4 px-4" style={{ backgroundColor: '#fcf6eb' }}>
+        <div className="max-w-lg mx-auto">
+          {/* Compact Header: Question # + Timer */}
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-lg font-semibold text-deep-blue">
+              Question {state.currentQuestion.index + 1}
+            </span>
+            <div className="flex items-center gap-2">
               {state.selectedAnswer && (
-                <span className="text-sm text-ocean-blue font-medium">Answer locked in!</span>
+                <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full">
+                  Locked in
+                </span>
               )}
+              <TimerDisplay
+                startedAt={state.currentQuestion.startedAt}
+                timeLimitSeconds={state.currentQuestion.timeLimitSeconds}
+              />
             </div>
-            <TimerDisplay
-              startedAt={state.currentQuestion.startedAt}
-              timeLimitSeconds={state.currentQuestion.timeLimitSeconds}
-            />
           </div>
 
           {/* Question Card */}
-          <Card className="mb-6">
-            <CardContent className="p-6 md:p-8">
-              {/* Question Image */}
-              {state.currentQuestion.imageUrl && (
-                <div className="mb-6">
-                  <img
-                    src={state.currentQuestion.imageUrl}
-                    alt="Question image"
-                    className="w-full max-h-64 object-contain rounded-lg"
-                  />
-                </div>
-              )}
+          <div className="rounded-2xl shadow-lg overflow-hidden" style={{ backgroundColor: '#FDFBF7', border: '2px solid #eee0d2' }}>
+            {/* Question Image */}
+            {state.currentQuestion.imageUrl && (
+              <div className="p-4 pb-0">
+                <img
+                  src={state.currentQuestion.imageUrl}
+                  alt="Question image"
+                  className="w-full max-h-48 object-contain rounded-lg"
+                />
+              </div>
+            )}
 
-              <h2 className="text-xl md:text-2xl font-semibold text-deep-blue mb-6">
+            <div className="p-4">
+              <h2 className="text-lg font-semibold text-deep-blue mb-4">
                 {state.currentQuestion.question}
               </h2>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {(['A', 'B', 'C', 'D'] as const).map((option) => {
                   const optionText = state.currentQuestion!.options[option]
                   const isSelected = state.selectedAnswer === option
@@ -628,23 +705,23 @@ export default function QuizPage() {
                       key={option}
                       onClick={() => handleSelectAnswer(option)}
                       disabled={!!state.selectedAnswer}
-                      className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                      className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
                         isSelected
                           ? 'border-ocean-blue bg-ocean-blue/10'
-                          : 'border-gray-200 hover:border-ocean-blue/50'
+                          : 'border-gray-200 bg-white hover:border-ocean-blue/50'
                       } ${state.selectedAnswer ? 'cursor-not-allowed' : 'cursor-pointer active:scale-[0.98]'}`}
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className={`w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                          className={`w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 text-sm font-bold ${
                             isSelected
                               ? 'border-ocean-blue bg-ocean-blue text-white'
-                              : 'border-gray-300'
+                              : 'border-gray-300 text-gray-500'
                           }`}
                         >
                           {option}
                         </div>
-                        <span className={`${isSelected ? 'text-deep-blue font-medium' : 'text-deep-blue/70'}`}>
+                        <span className={`text-sm ${isSelected ? 'text-deep-blue font-medium' : 'text-deep-blue/80'}`}>
                           {optionText}
                         </span>
                       </div>
@@ -653,190 +730,164 @@ export default function QuizPage() {
                 })}
               </div>
 
-              {!state.selectedAnswer && (
-                <p className="text-center text-sm text-deep-blue/60 mt-4">
-                  Tap an answer to lock it in. You cannot change it!
+              {!state.selectedAnswer && state.status === 'question' && (
+                <p className="text-center text-xs text-deep-blue/50 mt-3">
+                  Tap to lock in your answer
                 </p>
               )}
-            </CardContent>
-          </Card>
+
+              {/* Waiting for results */}
+              {state.status === 'answered' && (
+                <div className="mt-4 text-center">
+                  <div className="inline-flex items-center gap-2 text-ocean-blue text-sm">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Waiting for results...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     )
   }
 
-  // Answer reveal
+  // Answer reveal - Clean mobile-first design
   if (state.status === 'reveal' && state.revealData) {
     const isCorrect = state.selectedAnswer === state.revealData.correctAnswer
     const didAnswer = state.selectedAnswer !== null
     const pointsBreakdown = getPointsBreakdown(isCorrect, timeTakenMsRef.current, 30000)
+    const pointsEarned = isCorrect ? pointsBreakdown.total : 0
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-soft-white to-pale-blue/30 py-8 px-4">
-        <div className="max-w-2xl mx-auto">
-          {/* Question + Answers Recap */}
-          {state.revealData.question && (
-            <Card className="mb-4 bg-gray-50 border-gray-200">
-              <CardContent className="p-4">
-                <p className="text-sm text-deep-blue/60 mb-2">Question {state.revealData.index + 1}:</p>
-                <p className="text-deep-blue font-semibold mb-3">{state.revealData.question}</p>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  {(['A', 'B', 'C', 'D'] as const).map((opt) => {
-                    const isCorrect = opt === state.revealData!.correctAnswer
-                    const isUserAnswer = opt === state.selectedAnswer
-                    return (
-                      <div
-                        key={opt}
-                        className={`p-2 rounded-lg border ${
-                          isCorrect
-                            ? 'bg-green-50 border-green-300 text-green-800'
-                            : isUserAnswer && !isCorrect
-                            ? 'bg-red-50 border-red-300 text-red-800'
-                            : 'bg-white border-gray-200 text-deep-blue/70'
-                        }`}
-                      >
-                        <span className="font-bold">{opt}.</span> {state.revealData!.options[opt]}
-                      </div>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Result Card */}
-          <Card className="mb-6">
-            <CardContent className="p-8 text-center">
-              <div className="flex items-center justify-center mb-4">
+      <div className="min-h-screen py-4 px-4" style={{ backgroundColor: '#fcf6eb' }}>
+        <div className="max-w-lg mx-auto">
+          {/* Main Card */}
+          <div className="rounded-2xl shadow-lg overflow-hidden" style={{ backgroundColor: '#FDFBF7', border: '2px solid #eee0d2' }}>
+            {/* Header - Result & Points */}
+            <div className={`px-4 py-3 flex items-center justify-between ${
+              isCorrect ? 'bg-green-500' : didAnswer ? 'bg-red-400' : 'bg-gray-400'
+            }`}>
+              <div className="flex items-center gap-2 text-white">
                 {isCorrect ? (
-                  <div className="w-20 h-20 rounded-full bg-ocean-blue/10 flex items-center justify-center border-3 border-ocean-blue">
-                    <Check className="w-12 h-12 text-ocean-blue" />
-                  </div>
+                  <Check className="w-5 h-5" />
                 ) : didAnswer ? (
-                  <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center border-3 border-red-300">
-                    <X className="w-12 h-12 text-red-400" />
-                  </div>
+                  <X className="w-5 h-5" />
                 ) : (
-                  <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center border-3 border-gray-300">
-                    <Clock className="w-12 h-12 text-gray-500" />
-                  </div>
+                  <Clock className="w-5 h-5" />
                 )}
+                <span className="font-semibold">
+                  {isCorrect ? 'Correct!' : didAnswer ? 'Incorrect' : 'No Answer'}
+                </span>
               </div>
-              <h2 className="font-dancing text-4xl italic mb-2" style={{ color: isCorrect ? '#0284c7' : didAnswer ? '#b91c1c' : '#6b7280' }}>
-                {isCorrect ? 'Correct!' : didAnswer ? 'Oops!' : "Time's up!"}
-              </h2>
-              {!didAnswer && (
-                <p className="text-deep-blue/70 text-lg">
-                  The correct answer was <span className="font-bold text-ocean-blue">{state.revealData.correctAnswer}</span>
-                </p>
-              )}
-              {didAnswer && !isCorrect && (
-                <p className="text-deep-blue/70 text-lg">
-                  The correct answer was <span className="font-bold text-ocean-blue">{state.revealData.correctAnswer}</span>
-                </p>
-              )}
-              {isCorrect && (
-                <p className="text-lg font-semibold text-ocean-blue">+{pointsBreakdown.total} points</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Points Breakdown */}
-          {isCorrect && (
-            <Card className="mb-6">
-              <CardContent className="p-6">
-                <h3 className="font-semibold text-deep-blue mb-4">Points Earned</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-deep-blue/70">Base points</span>
-                    <span className="font-semibold">+{pointsBreakdown.base}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-deep-blue/70">Speed bonus</span>
-                    <span className="font-semibold text-ocean-blue">+{pointsBreakdown.timeBonus}</span>
-                  </div>
-                  <div className="border-t pt-3 flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span className="text-ocean-blue">+{pointsBreakdown.total}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Answer Distribution */}
-          <Card className="mb-6">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-deep-blue">How Everyone Answered</h3>
-                <div className="flex items-center gap-1 text-sm text-deep-blue/60">
-                  <Users className="w-4 h-4" />
-                  <span>{state.revealData.stats.total}</span>
-                </div>
+              <div className="text-white font-bold">
+                {pointsEarned > 0 ? `+${pointsEarned}` : '0'} pts
               </div>
-              <p className="text-sm text-deep-blue/60 mb-4">
-                Correct answer: <span className="font-semibold text-ocean-blue">{state.revealData.correctAnswer}</span>
-              </p>
-              <div className="space-y-4">
+            </div>
+
+            <div className="p-4">
+              {/* Question */}
+              <div className="mb-4">
+                <p className="text-xs text-deep-blue/50 mb-1">Question {state.revealData.index + 1}</p>
+                <h2 className="text-lg font-semibold text-deep-blue">
+                  {state.revealData.question}
+                </h2>
+              </div>
+
+              {/* Answer Options */}
+              <div className="space-y-2">
                 {(['A', 'B', 'C', 'D'] as const).map((option) => {
-                  const count = state.revealData!.stats[option] as number
-                  const total = state.revealData!.stats.total
-                  const percentage = total > 0 ? (count / total) * 100 : 0
+                  const optionText = state.revealData!.options[option]
                   const isCorrectAnswer = option === state.revealData!.correctAnswer
                   const isUserAnswer = option === state.selectedAnswer
+                  const isUserWrong = isUserAnswer && !isCorrectAnswer
+                  const count = state.revealData!.stats[option] as number
+                  const total = state.revealData!.stats.total
+                  const percentage = total > 0 ? Math.round((count / total) * 100) : 0
 
                   return (
-                    <div key={option}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
-                            style={{
-                              backgroundColor: isCorrectAnswer ? '#e0f2fe' : isUserAnswer && !isCorrect ? '#fef2f2' : '#f3f4f6',
-                              color: isCorrectAnswer ? '#0284c7' : isUserAnswer && !isCorrect ? '#b91c1c' : '#6b7280',
-                              border: isCorrectAnswer ? '2px solid #0ea5e9' : isUserAnswer && !isCorrect ? '2px solid #f87171' : '2px solid #d1d5db'
-                            }}
-                          >
-                            {option}
+                    <div
+                      key={option}
+                      className={`relative p-3 rounded-lg border-2 ${
+                        isCorrectAnswer
+                          ? 'bg-green-50 border-green-400'
+                          : isUserWrong
+                          ? 'bg-red-50 border-red-300'
+                          : 'bg-gray-50 border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          {/* Option indicator */}
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            isCorrectAnswer
+                              ? 'bg-green-500 text-white'
+                              : isUserWrong
+                              ? 'bg-red-400 text-white'
+                              : 'bg-gray-200 text-gray-500'
+                          }`}>
+                            {isCorrectAnswer ? (
+                              <Check className="w-5 h-5" />
+                            ) : isUserWrong ? (
+                              <X className="w-5 h-5" />
+                            ) : (
+                              <span className="text-sm font-bold">{option}</span>
+                            )}
+                          </div>
+                          {/* Answer Text */}
+                          <span className={`text-sm ${
+                            isCorrectAnswer
+                              ? 'text-green-800 font-medium'
+                              : isUserWrong
+                              ? 'text-red-700'
+                              : 'text-deep-blue/70'
+                          }`}>
+                            {optionText}
                           </span>
-                          {isCorrectAnswer && (
-                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-sky-100 text-sky-700">
-                              Correct
-                            </span>
-                          )}
-                          {isUserAnswer && !isCorrect && (
-                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-600">
-                              Your answer
-                            </span>
-                          )}
                         </div>
-                        <span className="text-sm font-medium text-deep-blue/70">
-                          {count} ({percentage.toFixed(0)}%)
+                        {/* Percentage */}
+                        <span className={`text-sm font-medium ml-2 ${
+                          isCorrectAnswer ? 'text-green-600' : 'text-deep-blue/50'
+                        }`}>
+                          {percentage}%
                         </span>
                       </div>
-                      <div className="h-2.5 rounded-full overflow-hidden bg-gray-200">
+                      {/* Progress bar */}
+                      <div className="mt-2 h-1.5 rounded-full bg-gray-200 overflow-hidden">
                         <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${Math.max(percentage, 2)}%`,
-                            backgroundColor: isCorrectAnswer ? '#0ea5e9' : isUserAnswer && !isCorrect ? '#f87171' : '#d1d5db'
-                          }}
+                          className={`h-full rounded-full transition-all duration-700 ${
+                            isCorrectAnswer ? 'bg-green-400' : isUserWrong ? 'bg-red-300' : 'bg-gray-300'
+                          }`}
+                          style={{ width: `${percentage}%` }}
                         />
                       </div>
                     </div>
                   )
                 })}
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Score */}
-          <Card>
-            <CardContent className="p-6 text-center">
-              <p className="text-sm text-deep-blue/70 mb-1">Your Total Score</p>
-              <p className="text-4xl font-bold text-ocean-blue">{state.totalScore}</p>
-            </CardContent>
-          </Card>
+              {/* Stats Footer */}
+              <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-sm">
+                <div className="flex items-center gap-1 text-deep-blue/60">
+                  <Users className="w-4 h-4" />
+                  <span>{state.revealData.stats.total} answered</span>
+                </div>
+                <div className="text-deep-blue/60">
+                  {state.revealData.stats.correctCount} correct ({
+                    state.revealData.stats.total > 0
+                      ? Math.round((state.revealData.stats.correctCount / state.revealData.stats.total) * 100)
+                      : 0
+                  }%)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Total Score */}
+          <div className="mt-4 text-center">
+            <p className="text-sm text-deep-blue/60">Your Total Score</p>
+            <p className="text-3xl font-bold text-ocean-blue">{state.totalScore}</p>
+          </div>
         </div>
       </div>
     )
@@ -847,35 +898,35 @@ export default function QuizPage() {
     const currentRanking = state.rankings.find((r) => r.partyId === party.id)
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-soft-white to-pale-blue/30 py-8 px-4">
-        <div className="max-w-2xl mx-auto">
-          <div className="text-center mb-6">
-            <h1 className="font-dancing text-4xl italic text-ocean-blue mb-2">Leaderboard</h1>
-            <p className="text-deep-blue/70">Waiting for next question...</p>
+      <div className="min-h-screen py-4 px-4" style={{ backgroundColor: '#fcf6eb' }}>
+        <div className="max-w-lg mx-auto">
+          <div className="text-center mb-4">
+            <h1 className="font-crimson text-3xl italic text-ocean-blue mb-1">Leaderboard</h1>
+            <p className="text-sm text-deep-blue/60">Waiting for next question...</p>
           </div>
 
+          {/* Your Position Card */}
           {currentRanking && (
-            <Card className="mb-6 bg-ocean-blue text-white">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-white/80 text-sm">Your Rank</p>
-                    <p className="text-3xl font-bold">#{currentRanking.rank}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-white/80 text-sm">Score</p>
-                    <p className="text-3xl font-bold">{currentRanking.totalScore}</p>
-                  </div>
+            <div className="mb-4 bg-gradient-to-r from-ocean-blue to-sky-blue rounded-2xl p-4 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-white/80 text-xs">Your Rank</p>
+                  <p className="text-2xl font-bold">#{currentRanking.rank}</p>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="text-right">
+                  <p className="text-white/80 text-xs">Score</p>
+                  <p className="text-2xl font-bold">{currentRanking.totalScore}</p>
+                </div>
+              </div>
+            </div>
           )}
 
-          <Card>
-            <CardContent className="p-6">
-              <LeaderboardList rankings={state.rankings} currentPartyId={party.id} maxItems={10} />
-            </CardContent>
-          </Card>
+          {/* Leaderboard List */}
+          <div className="rounded-2xl shadow-lg overflow-hidden" style={{ backgroundColor: '#FDFBF7', border: '2px solid #eee0d2' }}>
+            <div className="p-4">
+              <LeaderboardList rankings={state.rankings} previousRankings={previousRankingsRef.current} currentPartyId={party.id} maxItems={10} animate={true} />
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -887,25 +938,25 @@ export default function QuizPage() {
     const topThree = state.rankings.slice(0, 3)
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-soft-white to-pale-blue/30 py-8 px-4">
-        <div className="max-w-2xl mx-auto">
+      <div className="min-h-screen py-4 px-4" style={{ backgroundColor: '#fcf6eb' }}>
+        <div className="max-w-lg mx-auto">
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full p-4 w-24 h-24 mx-auto mb-4 flex items-center justify-center">
-              <Award className="w-16 h-16 text-white" />
+          <div className="text-center mb-6">
+            <div className="bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full p-3 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+              <Award className="w-10 h-10 text-white" />
             </div>
-            <h1 className="font-dancing text-4xl md:text-5xl italic text-ocean-blue mb-2">
+            <h1 className="font-crimson text-3xl italic text-ocean-blue mb-1">
               Quiz Complete!
             </h1>
-            <p className="text-deep-blue/70">
+            <p className="text-sm text-deep-blue/60">
               {state.rankings.length} participant{state.rankings.length !== 1 ? 's' : ''} competed
             </p>
           </div>
 
           {/* Podium */}
           {topThree.length > 0 && (
-            <Card className="mb-6">
-              <CardContent className="p-6">
+            <div className="rounded-2xl shadow-lg overflow-hidden mb-4" style={{ backgroundColor: '#FDFBF7', border: '2px solid #eee0d2' }}>
+              <div className="p-4">
                 <div className="flex items-end justify-center gap-4 mb-4">
                   {/* 2nd Place */}
                   {topThree[1] && (
@@ -949,38 +1000,36 @@ export default function QuizPage() {
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* Your Result */}
           {currentRanking && (
-            <Card className="mb-6 bg-ocean-blue text-white">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-white/80 text-sm">Your Final Rank</p>
-                    <p className="text-3xl font-bold">#{currentRanking.rank}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-white/80 text-sm">Final Score</p>
-                    <p className="text-3xl font-bold">{currentRanking.totalScore}</p>
-                  </div>
+            <div className="mb-4 bg-gradient-to-r from-ocean-blue to-sky-blue rounded-2xl p-4 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-white/80 text-xs">Your Final Rank</p>
+                  <p className="text-2xl font-bold">#{currentRanking.rank}</p>
                 </div>
-                {currentRanking.hasGamesBonus && (
-                  <p className="mt-2 text-white/90 text-sm">Includes +200 Games Completion Bonus!</p>
-                )}
-              </CardContent>
-            </Card>
+                <div className="text-right">
+                  <p className="text-white/80 text-xs">Final Score</p>
+                  <p className="text-2xl font-bold">{currentRanking.totalScore}</p>
+                </div>
+              </div>
+              {currentRanking.hasGamesBonus && (
+                <p className="mt-2 text-white/90 text-sm">Includes +200 Games Completion Bonus!</p>
+              )}
+            </div>
           )}
 
           {/* Full Leaderboard */}
-          <Card>
-            <CardContent className="p-6">
+          <div className="rounded-2xl shadow-lg overflow-hidden" style={{ backgroundColor: '#FDFBF7', border: '2px solid #eee0d2' }}>
+            <div className="p-4">
               <h2 className="font-semibold text-deep-blue text-lg mb-4">Full Leaderboard</h2>
-              <LeaderboardList rankings={state.rankings} currentPartyId={party.id} maxItems={20} />
-            </CardContent>
-          </Card>
+              <LeaderboardList rankings={state.rankings} previousRankings={previousRankingsRef.current} currentPartyId={party.id} maxItems={20} animate={true} />
+            </div>
+          </div>
 
           {/* Back to Games */}
           <div className="mt-6">
@@ -998,13 +1047,13 @@ export default function QuizPage() {
 
   // Fallback
   return (
-    <div className="min-h-screen bg-gradient-to-br from-soft-white to-pale-blue/30 flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#fcf6eb' }}>
       <Loader2 className="w-12 h-12 animate-spin text-ocean-blue" />
     </div>
   )
 }
 
-// Timer component
+// Timer component - Compact pill style
 function TimerDisplay({ startedAt, timeLimitSeconds }: { startedAt: string; timeLimitSeconds: number }) {
   const [remaining, setRemaining] = useState(timeLimitSeconds)
 
@@ -1027,10 +1076,12 @@ function TimerDisplay({ startedAt, timeLimitSeconds }: { startedAt: string; time
   const isMedium = remaining <= 10 && remaining > 5
 
   return (
-    <div className="flex items-center justify-center gap-2">
-      <Clock className={`w-5 h-5 ${isLow ? 'text-red-500' : isMedium ? 'text-orange-500' : 'text-ocean-blue'}`} />
+    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
+      isLow ? 'bg-red-100' : isMedium ? 'bg-orange-100' : 'bg-ocean-blue/10'
+    }`}>
+      <Clock className={`w-4 h-4 ${isLow ? 'text-red-500' : isMedium ? 'text-orange-500' : 'text-ocean-blue'}`} />
       <span
-        className={`text-3xl font-bold tabular-nums ${
+        className={`text-lg font-bold tabular-nums min-w-[1.5rem] text-center ${
           isLow ? 'text-red-500 animate-pulse' : isMedium ? 'text-orange-500' : 'text-ocean-blue'
         }`}
       >
@@ -1040,17 +1091,67 @@ function TimerDisplay({ startedAt, timeLimitSeconds }: { startedAt: string; time
   )
 }
 
+// Animated number component
+function AnimatedScore({ value, fromValue, className }: { value: number; fromValue?: number; className?: string }) {
+  const startFrom = fromValue ?? value
+  const [displayValue, setDisplayValue] = useState(startFrom)
+  const animationStarted = useRef(false)
+
+  useEffect(() => {
+    // Only animate once when component mounts or value changes
+    if (animationStarted.current && displayValue === value) return
+
+    const startValue = animationStarted.current ? displayValue : startFrom
+    const endValue = value
+
+    if (startValue === endValue) {
+      setDisplayValue(endValue)
+      return
+    }
+
+    animationStarted.current = true
+    const duration = 1200 // ms
+    const startTime = Date.now()
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime
+      const progress = Math.min(elapsed / duration, 1)
+
+      // Ease out cubic
+      const eased = 1 - Math.pow(1 - progress, 3)
+      const current = Math.round(startValue + (endValue - startValue) * eased)
+
+      setDisplayValue(current)
+
+      if (progress < 1) {
+        requestAnimationFrame(animate)
+      }
+    }
+
+    requestAnimationFrame(animate)
+  }, [value, startFrom])
+
+  return <span className={className}>{displayValue}</span>
+}
+
 // Leaderboard component
 function LeaderboardList({
   rankings,
+  previousRankings = [],
   currentPartyId,
   maxItems = 10,
+  animate = false,
 }: {
   rankings: ParticipantRanking[]
+  previousRankings?: ParticipantRanking[]
   currentPartyId?: string
   maxItems?: number
+  animate?: boolean
 }) {
   const displayRankings = rankings.slice(0, maxItems)
+
+  // Create a map of previous scores for quick lookup
+  const previousScoreMap = new Map(previousRankings.map(r => [r.partyId, r.totalScore]))
 
   if (rankings.length === 0) {
     return <div className="text-center py-8 text-deep-blue/60">No participants yet</div>
@@ -1060,11 +1161,21 @@ function LeaderboardList({
     <div className="space-y-2">
       {displayRankings.map((entry) => {
         const isCurrentUser = entry.partyId === currentPartyId
+        const previousScore = previousScoreMap.get(entry.partyId) ?? 0
+        const scoreColorClass = isCurrentUser
+          ? 'text-ocean-blue'
+          : entry.rank === 1
+          ? 'text-yellow-600'
+          : entry.rank === 2
+          ? 'text-gray-600'
+          : entry.rank === 3
+          ? 'text-orange-500'
+          : 'text-deep-blue'
 
         return (
           <div
             key={entry.partyId}
-            className={`rounded-lg p-3 ${
+            className={`rounded-lg p-3 transition-all duration-500 ${
               isCurrentUser
                 ? 'bg-ocean-blue/10 border-2 border-ocean-blue'
                 : entry.rank === 1
@@ -1077,7 +1188,7 @@ function LeaderboardList({
             }`}
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 text-center">
+              <div className="w-8 flex-shrink-0 text-center">
                 {entry.rank <= 3 ? (
                   <Trophy
                     className={`w-5 h-5 mx-auto ${
@@ -1088,28 +1199,24 @@ function LeaderboardList({
                   <span className="text-deep-blue/50 font-bold">#{entry.rank}</span>
                 )}
               </div>
-              <div className="flex-grow min-w-0">
-                <span className={`font-semibold truncate ${isCurrentUser ? 'text-ocean-blue' : 'text-deep-blue'}`}>
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <p className={`font-semibold truncate ${isCurrentUser ? 'text-ocean-blue' : 'text-deep-blue'}`}>
                   {entry.partyName}
                   {isCurrentUser && ' (You)'}
-                </span>
+                </p>
               </div>
-              <div className="text-right">
-                <span
-                  className={`text-lg font-bold ${
-                    isCurrentUser
-                      ? 'text-ocean-blue'
-                      : entry.rank === 1
-                      ? 'text-yellow-600'
-                      : entry.rank === 2
-                      ? 'text-gray-600'
-                      : entry.rank === 3
-                      ? 'text-orange-500'
-                      : 'text-deep-blue'
-                  }`}
-                >
-                  {entry.totalScore}
-                </span>
+              <div className="flex-shrink-0 ml-2">
+                {animate ? (
+                  <AnimatedScore
+                    value={entry.totalScore}
+                    fromValue={previousScore}
+                    className={`text-lg font-bold ${scoreColorClass}`}
+                  />
+                ) : (
+                  <span className={`text-lg font-bold ${scoreColorClass}`}>
+                    {entry.totalScore}
+                  </span>
+                )}
               </div>
             </div>
           </div>
