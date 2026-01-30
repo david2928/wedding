@@ -358,6 +358,9 @@ export default function SunsetUploadPage() {
           <p className="text-deep-blue/70">
             Upload a beautiful sunset photo from the wedding
           </p>
+          <p className="text-amber-600 text-sm mt-2 italic">
+            Oops! No direct sunset view here — ocean photos work too!
+          </p>
         </div>
 
         {/* Upload Card */}
