@@ -201,8 +201,8 @@ const MEASUREMENTS = {
   tableTotalWidth: 1.6, // 1.6M seat-to-seat
   tableGap: 1, // 1M between tables
   seatLength: 0.6, // 0.6M per seat
-  topMargin: 1.8, // 1.8M from top edge to tables
-  bottomMargin: 1, // 1M from tables to terrace
+  topMargin: 1, // 1M from top edge to tables
+  bottomMargin: 1.8, // 1.8M from tables to stage/terrace
   bgTableWidth: 1.2, // 1.2M (2 seats x 0.6m)
 };
 
@@ -839,20 +839,20 @@ export default function AdminSeating2Page() {
                       ← 10M →
                     </div>
 
-                    {/* Room layout: Top 1.8M (108px) | Tables 7.2M (432px) | Bottom 1M (60px) */}
+                    {/* Room layout: Top 1M (60px) for B&G | Tables 7.2M (432px) | Bottom 1.8M (108px) for Stage */}
 
-                    {/* Stage 3m x 3m positioned at top center (between B and D) */}
+                    {/* B&G at the very top center */}
                     <div className="absolute top-2 left-1/2 -translate-x-1/2">
-                      <StageSection />
+                      <BrideGroomSection />
                     </div>
 
-                    {/* Tables positioned with bottom margin of 1M (60px) */}
+                    {/* Tables positioned with top margin of 1M (60px) */}
                     <div
                       className="absolute left-0 right-0 flex justify-center"
-                      style={{ bottom: MEASUREMENTS.bottomMargin * SCALE }} // 60px from bottom
+                      style={{ top: MEASUREMENTS.topMargin * SCALE }} // 60px from top
                     >
                       {/* Gap between tables: 1M = 60px */}
-                      <div className="flex items-end" style={{ gap: PX.tableGap }}>
+                      <div className="flex items-start" style={{ gap: PX.tableGap }}>
                         {/* Tables A and B */}
                         {[1, 2].map(tableNum => (
                           <LongTable
@@ -868,21 +868,18 @@ export default function AdminSeating2Page() {
                           />
                         ))}
 
-                        {/* Table C with B&G above */}
-                        <div className="flex flex-col items-center">
-                          <BrideGroomSection />
-                          <div className="mt-2">
-                            <LongTable
-                              tableNumber={3}
-                              tableName={tableNames[3]}
-                              seatAssignments={seatAssignments.get(3) || []}
-                              config={TABLE_CONFIG[3]}
-                              onSeatClick={handleSeatClick}
-                              onRemoveGuest={handleRemoveGuest}
-                              selectedGuest={selectedGuest}
-                              parties={parties}
-                            />
-                          </div>
+                        {/* Table C in the middle - pushed down to align with row 3 */}
+                        <div className="flex flex-col items-center" style={{ marginTop: 2 * (PX.seatHeight + PX.seatGap) + 24 }}>
+                          <LongTable
+                            tableNumber={3}
+                            tableName={tableNames[3]}
+                            seatAssignments={seatAssignments.get(3) || []}
+                            config={TABLE_CONFIG[3]}
+                            onSeatClick={handleSeatClick}
+                            onRemoveGuest={handleRemoveGuest}
+                            selectedGuest={selectedGuest}
+                            parties={parties}
+                          />
                         </div>
 
                         {/* Tables D and E */}
@@ -900,6 +897,11 @@ export default function AdminSeating2Page() {
                           />
                         ))}
                       </div>
+                    </div>
+
+                    {/* Stage at the bottom center */}
+                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
+                      <StageSection />
                     </div>
 
                     {/* Terrace line at absolute bottom */}

@@ -1,13 +1,17 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Users, Lock, Loader2 } from 'lucide-react'
+import { Users, Lock, Loader2, Search, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { isTimeUnlocked, formatThailandTime } from '@/lib/utils/timezone'
 import type { Tables } from '@/lib/supabase/types'
 
 type Guest = Tables<'guests'>
+
+interface GuestWithParty extends Guest {
+  party_name?: string
+}
 
 interface SeatingSectionProps {
   partyId: string | null
@@ -66,14 +70,7 @@ const MiniFloorPlan: React.FC<MiniFloorPlanProps> = ({ highlightedTable, seatDet
       </p>
 
       <div className="relative w-full max-w-md mx-auto bg-white border border-gray-300 p-4">
-        {/* Stage at top center */}
-        <div className="flex justify-center mb-3">
-          <div className="bg-purple-200 border border-purple-400 px-8 py-2">
-            <span className="text-xs text-purple-700 font-medium">Stage</span>
-          </div>
-        </div>
-
-        {/* B&G positioned above Table C */}
+        {/* B&G at the very top center */}
         <div className="flex justify-center mb-3">
           <div className="flex items-center gap-2 bg-gray-100 border border-gray-300 px-3 py-1">
             <span className="text-sm">👰</span>
@@ -82,8 +79,8 @@ const MiniFloorPlan: React.FC<MiniFloorPlanProps> = ({ highlightedTable, seatDet
           </div>
         </div>
 
-        {/* Tables aligned at bottom */}
-        <div className="flex justify-center items-end gap-3">
+        {/* Tables aligned at top */}
+        <div className="flex justify-center items-start gap-3">
           {tables.map(({ letter, height, seatsPerSide }) => {
             const isHighlighted = highlightedTable === letter
             const tableWidth = 28
@@ -141,6 +138,13 @@ const MiniFloorPlan: React.FC<MiniFloorPlanProps> = ({ highlightedTable, seatDet
           })}
         </div>
 
+        {/* Stage at bottom center */}
+        <div className="flex justify-center mt-3">
+          <div className="bg-purple-200 border border-purple-400 px-8 py-2">
+            <span className="text-xs text-purple-700 font-medium">Stage</span>
+          </div>
+        </div>
+
         {/* Legend for seat dot */}
         {seatSide && seatNum && (
           <div className="mt-2 flex justify-center items-center gap-1 text-[10px] text-gray-500">
@@ -169,7 +173,11 @@ const MiniFloorPlan: React.FC<MiniFloorPlanProps> = ({ highlightedTable, seatDet
 const SeatingSection: React.FC<SeatingSectionProps> = ({ partyId, forceUnlock = false }) => {
   const [isUnlocked, setIsUnlocked] = useState(forceUnlock)
   const [guests, setGuests] = useState<Guest[]>([])
+  const [allGuests, setAllGuests] = useState<GuestWithParty[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedSearchGuest, setSelectedSearchGuest] = useState<GuestWithParty | null>(null)
+  const [showDropdown, setShowDropdown] = useState(false)
 
   // Check unlock time
   useEffect(() => {
@@ -187,7 +195,7 @@ const SeatingSection: React.FC<SeatingSectionProps> = ({ partyId, forceUnlock = 
     return () => clearInterval(interval)
   }, [forceUnlock])
 
-  // Fetch guests when unlocked and partyId is available
+  // Fetch party guests when unlocked and partyId is available
   useEffect(() => {
     if (!isUnlocked || !partyId) {
       setLoading(false)
@@ -211,6 +219,51 @@ const SeatingSection: React.FC<SeatingSectionProps> = ({ partyId, forceUnlock = 
     fetchGuests()
   }, [isUnlocked, partyId])
 
+  // Fetch all guests for search when unlocked
+  useEffect(() => {
+    if (!isUnlocked) return
+
+    const fetchAllGuests = async () => {
+      const { data } = await supabase
+        .from('guests')
+        .select('*, parties(name)')
+        .eq('rsvp_status', 'Attending')
+        .not('table_number', 'is', null)
+        .order('first_name')
+
+      if (data) {
+        const guestsWithParty = data.map(g => ({
+          ...g,
+          party_name: (g.parties as { name: string } | null)?.name || undefined
+        }))
+        setAllGuests(guestsWithParty)
+      }
+    }
+
+    fetchAllGuests()
+  }, [isUnlocked])
+
+  // Filter guests based on search term
+  const filteredGuests = useMemo(() => {
+    if (!searchTerm.trim()) return []
+    const term = searchTerm.toLowerCase()
+    return allGuests.filter(g =>
+      g.first_name?.toLowerCase().includes(term) ||
+      g.party_name?.toLowerCase().includes(term)
+    ).slice(0, 10) // Limit to 10 results
+  }, [searchTerm, allGuests])
+
+  const handleSelectGuest = (guest: GuestWithParty) => {
+    setSelectedSearchGuest(guest)
+    setSearchTerm('')
+    setShowDropdown(false)
+  }
+
+  const clearSelectedGuest = () => {
+    setSelectedSearchGuest(null)
+    setSearchTerm('')
+  }
+
   const unlockTimeString = formatThailandTime(UNLOCK_HOUR, UNLOCK_MINUTE)
 
   return (
@@ -226,8 +279,8 @@ const SeatingSection: React.FC<SeatingSectionProps> = ({ partyId, forceUnlock = 
       </div>
 
       <Card
-        className={`relative transition-all duration-300 overflow-hidden shadow-2xl max-w-2xl mx-auto ${
-          isUnlocked ? '' : 'opacity-60'
+        className={`relative transition-all duration-300 shadow-2xl max-w-2xl mx-auto ${
+          isUnlocked ? 'overflow-visible' : 'overflow-hidden opacity-60'
         }`}
         style={{
           backgroundColor: isUnlocked ? '#FDFBF7' : '#f3f4f6',
@@ -260,62 +313,64 @@ const SeatingSection: React.FC<SeatingSectionProps> = ({ partyId, forceUnlock = 
               <Loader2 className="w-10 h-10 animate-spin text-ocean-blue mb-4" />
               <p className="text-deep-blue/70">Loading your seating...</p>
             </div>
-          ) : guests.length === 0 ? (
-            // No guests found
-            <div className="flex flex-col items-center text-center py-8">
-              <div className="w-20 h-20 rounded-full flex items-center justify-center bg-gradient-to-br from-ocean-blue to-sky-blue mb-4">
-                <Users className="w-10 h-10 text-white" />
-              </div>
-              <h3 className="font-dancing text-2xl font-bold text-ocean-blue mb-2">
-                Table Assignment
-              </h3>
-              <p className="text-deep-blue/70">
-                No seating information available yet.
-              </p>
-            </div>
           ) : (
-            // Show guests and their tables
+            // Show seating content
             <div className="space-y-4">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-ocean-blue to-sky-blue">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="font-dancing text-2xl font-bold text-ocean-blue">
-                  Your Party
-                </h3>
-              </div>
+              {/* Show party seating if guest has linked party */}
+              {guests.length > 0 ? (
+                <>
+                  <div className="flex items-center justify-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-ocean-blue to-sky-blue">
+                      <Users className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="font-dancing text-2xl font-bold text-ocean-blue">
+                      Your Party
+                    </h3>
+                  </div>
 
-              <div className="space-y-3">
-                {guests.map((guest) => {
-                  const seatInfo = formatSeatInfo(guest.table_number)
-                  return (
-                    <div
-                      key={guest.id}
-                      className="flex items-center justify-between p-4 rounded-xl bg-white border border-gray-100 shadow-sm"
-                    >
-                      <span className="font-medium text-deep-blue">
-                        {guest.first_name || 'Guest'}
-                      </span>
-                      {seatInfo ? (
-                        <div className="text-right">
-                          <span className="inline-flex items-center gap-2 bg-gradient-to-r from-ocean-blue to-sky-blue text-white font-bold text-sm px-4 py-2 rounded-full">
-                            Table {seatInfo.table}
+                  <div className="space-y-3">
+                    {guests.map((guest) => {
+                      const seatInfo = formatSeatInfo(guest.table_number)
+                      return (
+                        <div
+                          key={guest.id}
+                          className="flex items-center justify-between p-4 rounded-xl bg-white border border-gray-100 shadow-sm"
+                        >
+                          <span className="font-medium text-deep-blue">
+                            {guest.first_name || 'Guest'}
                           </span>
-                          {seatInfo.detail && (
-                            <p className="text-xs text-deep-blue/60 mt-1">
-                              {seatInfo.detail}
-                            </p>
+                          {seatInfo ? (
+                            <div className="text-right">
+                              <span className="inline-flex items-center gap-2 bg-gradient-to-r from-ocean-blue to-sky-blue text-white font-bold text-sm px-4 py-2 rounded-full">
+                                Table {seatInfo.table}
+                              </span>
+                              {seatInfo.detail && (
+                                <p className="text-xs text-deep-blue/60 mt-1">
+                                  {seatInfo.detail}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-deep-blue/50 text-sm">
+                              Table TBD
+                            </span>
                           )}
                         </div>
-                      ) : (
-                        <span className="text-deep-blue/50 text-sm">
-                          Table TBD
-                        </span>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
+                      )
+                    })}
+                  </div>
+                </>
+              ) : (
+                /* No linked party - show search prompt */
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-ocean-blue to-sky-blue">
+                    <Search className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="font-dancing text-2xl font-bold text-ocean-blue">
+                    Find Your Seat
+                  </h3>
+                </div>
+              )}
 
               {/* Show floor plan if any guest has a table assigned */}
               {(() => {
@@ -332,6 +387,101 @@ const SeatingSection: React.FC<SeatingSectionProps> = ({ partyId, forceUnlock = 
                   />
                 )
               })()}
+
+              {/* Guest Search Section */}
+              <div className={guests.length > 0 ? "mt-8 pt-6 border-t border-gray-200" : ""}>
+                <h4 className="text-center text-sm font-medium text-deep-blue/70 mb-3">
+                  {guests.length > 0 ? "Find another guest's table" : "Search for your name to find your table"}
+                </h4>
+
+                <div className="relative">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search by name..."
+                      value={searchTerm}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value)
+                        setShowDropdown(true)
+                      }}
+                      onFocus={() => setShowDropdown(true)}
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ocean-blue/30 focus:border-ocean-blue"
+                    />
+                  </div>
+
+                  {/* Dropdown results */}
+                  {showDropdown && filteredGuests.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {filteredGuests.map((guest) => {
+                        const seatInfo = formatSeatInfo(guest.table_number)
+                        return (
+                          <button
+                            key={guest.id}
+                            onClick={() => handleSelectGuest(guest)}
+                            className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center justify-between border-b border-gray-100 last:border-b-0"
+                          >
+                            <div>
+                              <span className="font-medium text-deep-blue text-sm">{guest.first_name}</span>
+                              {guest.party_name && (
+                                <span className="text-xs text-gray-500 ml-2">({guest.party_name})</span>
+                              )}
+                            </div>
+                            {seatInfo && (
+                              <span className="text-xs bg-ocean-blue/10 text-ocean-blue px-2 py-1 rounded">
+                                Table {seatInfo.table}
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Selected guest result */}
+                {selectedSearchGuest && (
+                  <div className="mt-4 p-4 bg-gradient-to-r from-ocean-blue/5 to-sky-blue/5 rounded-xl border border-ocean-blue/20">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-medium text-deep-blue">
+                        {selectedSearchGuest.first_name}
+                        {selectedSearchGuest.party_name && (
+                          <span className="text-sm text-gray-500 ml-2">({selectedSearchGuest.party_name})</span>
+                        )}
+                      </span>
+                      <button
+                        onClick={clearSelectedGuest}
+                        className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+                      >
+                        <X className="w-4 h-4 text-gray-500" />
+                      </button>
+                    </div>
+                    {(() => {
+                      const parsed = parseSeatCode(selectedSearchGuest.table_number)
+                      const seatInfo = formatSeatInfo(selectedSearchGuest.table_number)
+                      if (!parsed) return <p className="text-sm text-gray-500">No table assigned</p>
+                      return (
+                        <>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="inline-flex items-center bg-gradient-to-r from-ocean-blue to-sky-blue text-white font-bold text-sm px-4 py-2 rounded-full">
+                              Table {seatInfo?.table}
+                            </span>
+                            {seatInfo?.detail && (
+                              <span className="text-sm text-deep-blue/70">{seatInfo.detail}</span>
+                            )}
+                          </div>
+                          <MiniFloorPlan
+                            highlightedTable={parsed.table}
+                            seatDetail={seatInfo?.detail}
+                            seatSide={parsed.side || null}
+                            seatNum={parsed.seatNum || null}
+                          />
+                        </>
+                      )
+                    })()}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </CardContent>
