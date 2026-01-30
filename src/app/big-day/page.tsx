@@ -260,8 +260,8 @@ function BigDayContent({ partyId, partyName, isWalkIn = false, forceUnlock = fal
         {/* Quick Links */}
         <QuickLinks />
 
-        {/* Seating Section - hidden for walk-in guests */}
-        {!isWalkIn && <SeatingSection partyId={partyId} forceUnlock={forceUnlock} />}
+        {/* Seating Section - show for all guests including walk-ins (they can search) */}
+        <SeatingSection partyId={partyId} forceUnlock={forceUnlock} />
 
         {/* Menu Section */}
         <MenuSection forceUnlock={forceUnlock} />
