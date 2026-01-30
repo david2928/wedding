@@ -244,11 +244,6 @@ function GamesContent({ party, devMode }: { party: Party | null; devMode: boolea
           <p className="text-deep-blue/70">
             Complete games to earn bonus points for the Grand Prize Quiz!
           </p>
-          {party && (
-            <p className="text-sm text-deep-blue/50 mt-2">
-              Playing as: {party.name}
-            </p>
-          )}
           {devMode && (
             <p className="text-xs text-orange-600 mt-2">Dev Mode Active</p>
           )}
