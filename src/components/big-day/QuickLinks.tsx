@@ -22,7 +22,7 @@ const QuickLinks: React.FC = () => {
         <span className="font-dancing text-2xl text-ocean-blue">Win Prizes</span>
       </Link>
 
-      {/* Photo Album Link */}
+      {/* Share Pictures Link */}
       <a
         href={PHOTO_ALBUM_URL}
         target="_blank"
@@ -34,7 +34,7 @@ const QuickLinks: React.FC = () => {
         }}
       >
         <Camera className="w-8 h-8 text-ocean-blue" />
-        <span className="font-dancing text-2xl text-ocean-blue">Photo Album</span>
+        <span className="font-dancing text-2xl text-ocean-blue">Share Pictures</span>
       </a>
     </div>
   )
