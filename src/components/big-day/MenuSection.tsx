@@ -60,7 +60,7 @@ const MenuSection: React.FC<MenuSectionProps> = ({ forceUnlock = false }) => {
           Today's Menus
         </h2>
         <p className="text-deep-blue/70 mt-2 text-sm">
-          Menus unlock at their scheduled times
+          Tap to view each menu
         </p>
       </div>
 

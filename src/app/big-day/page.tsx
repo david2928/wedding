@@ -261,10 +261,10 @@ function BigDayContent({ partyId, partyName, isWalkIn = false, forceUnlock = fal
         <QuickLinks />
 
         {/* Seating Section - show for all guests including walk-ins (they can search) */}
-        <SeatingSection partyId={partyId} forceUnlock={forceUnlock} />
+        <SeatingSection partyId={partyId} forceUnlock={true} />
 
         {/* Menu Section */}
-        <MenuSection forceUnlock={forceUnlock} />
+        <MenuSection forceUnlock={true} />
 
         {/* Subtle gift upload link at the bottom */}
         <GiftUploadSection partyId={partyId} partyName={partyName} />
