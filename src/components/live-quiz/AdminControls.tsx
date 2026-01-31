@@ -92,7 +92,7 @@ export function AdminControls({
           </div>
         )}
 
-        {state.status === 'revealing' && (
+        {state.status === 'revealing' && !isLastQuestion && (
           <Button
             onClick={onShowLeaderboard}
             disabled={loading}
@@ -104,6 +104,21 @@ export function AdminControls({
               <Trophy className="w-5 h-5 mr-2" />
             )}
             Show Leaderboard
+          </Button>
+        )}
+
+        {state.status === 'revealing' && isLastQuestion && (
+          <Button
+            onClick={onEndQuiz}
+            disabled={loading}
+            className="w-full bg-amber-500 hover:bg-amber-600 text-lg py-6 text-white"
+          >
+            {loading ? (
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            ) : (
+              <Trophy className="w-5 h-5 mr-2" />
+            )}
+            Reveal Winners!
           </Button>
         )}
 
