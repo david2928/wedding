@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Loader2, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import HeroWelcome from '@/components/big-day/HeroWelcome'
+import ScheduleSection from '@/components/big-day/ScheduleSection'
 import QuickLinks from '@/components/big-day/QuickLinks'
 import MenuSection from '@/components/big-day/MenuSection'
 import SeatingSection from '@/components/big-day/SeatingSection'
@@ -256,6 +257,9 @@ function BigDayContent({ partyId, partyName, isWalkIn = false, forceUnlock = fal
 
         {/* Welcome Image */}
         <HeroWelcome />
+
+        {/* Schedule */}
+        <ScheduleSection />
 
         {/* Quick Links */}
         <QuickLinks />
